@@ -1,0 +1,8 @@
+# Pilot (task Q5): tiny grid to time one replication and check the whole pipeline end to end.
+n: 5000
+k: 0.2
+scales: [0.01, 1.0, 100.0]
+count_scales: [0.01, 1.0, 100.0]
+learners: [T, DR]
+cells:
+  - {scenarios: ["null", opposed], zero_rates: [0.9], reps: 5, tier: must}

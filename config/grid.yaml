@@ -1,0 +1,11 @@
+# NOTE: "null" must stay quoted - unquoted null is parsed by YAML as None.
+# Main grid (Part 6 of the playbook). tier: must | should. Run:  python src/run_sim.py config/grid.yaml results/main --jobs 8 --tier must
+n: 20000
+k: 0.2
+scales: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]
+count_scales: [0.01, 1.0, 100.0]
+learners: [T, DR]            # add S, X for the "should" tier
+cells:
+  - {scenarios: ["null", homogeneous], zero_rates: [0.9], reps: 20, tier: must}
+  - {scenarios: [extensive, intensive, aligned, opposed], zero_rates: [0.9], reps: 50, tier: must}
+  - {scenarios: [opposed, aligned], zero_rates: [0.7, 0.98], reps: 50, tier: should}
