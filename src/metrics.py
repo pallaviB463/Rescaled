@@ -5,23 +5,26 @@ import numpy as np
 from scipy.stats import spearmanr
 
 
+
 def rank_corr(a, b):
-    """Return Spearman rank correlation, guarding against constant inputs."""
+    """Return Spearman rank correlation; NaN if either input is constant."""
     a = np.asarray(a, dtype=float).ravel()
     b = np.asarray(b, dtype=float).ravel()
 
     if a.shape != b.shape:
         raise ValueError("a and b must have the same shape.")
     if a.size < 2:
-        return 0.0
+        return np.nan
     if not np.all(np.isfinite(a)) or not np.all(np.isfinite(b)):
         raise ValueError("Inputs must contain only finite values.")
 
     # Spearman correlation is undefined if either vector is constant.
     if np.ptp(a) == 0 or np.ptp(b) == 0:
-        return 0.0
+        return np.nan
 
-    return float(spearmanr(a, b).statistic)
+    result = spearmanr(a, b).statistic
+    return float(result) if np.isfinite(result) else np.nan
+
 
 
 def topk_mask(score, k):

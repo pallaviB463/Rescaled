@@ -18,9 +18,10 @@ def test_rank_corr_for_perfect_rankings():
 
 
 def test_rank_corr_handles_constant_vectors():
-    assert rank_corr([0, 0, 0], [1, 2, 3]) == 0.0
-    assert rank_corr([1, 2, 3], [5, 5, 5]) == 0.0
-    assert rank_corr([0, 0, 0], [0, 0, 0]) == 0.0
+    import numpy as np
+
+    assert np.isnan(rank_corr([0, 0, 0], [1, 2, 3]))
+    assert np.isnan(rank_corr([1, 2, 3], [0, 0, 0]))
 
 
 def test_topk_mask_selects_correct_number():
@@ -66,3 +67,18 @@ def test_ipw_policy_value_is_finite():
 def test_rank_corr_rejects_mismatched_shapes():
     with pytest.raises(ValueError):
         rank_corr([1, 2], [1, 2, 3])
+
+def test_rank_corr_returns_nan_for_constant_truth():
+    import numpy as np
+    from src.metrics import rank_corr
+
+    result = rank_corr([0.1, 0.2, 0.3], [0.0, 0.0, 0.0])
+    assert np.isnan(result)
+
+
+def test_rank_corr_returns_nan_for_constant_predictions():
+    import numpy as np
+    from src.metrics import rank_corr
+
+    result = rank_corr([1.0, 1.0, 1.0], [0.1, 0.2, 0.3])
+    assert np.isnan(result)
