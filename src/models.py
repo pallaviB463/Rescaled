@@ -80,11 +80,6 @@ class Poisson(BaseEstimator, RegressorMixin):
     def fit(self, X, y):
         X, y = _validate_xy(X, y)
 
-        if not np.allclose(y, np.round(y)):
-            raise ValueError(
-                "Poisson regression requires integer-valued outcomes."
-            )
-
         self.model_ = lgb.LGBMRegressor(
             objective="poisson",
             **{**LGBM_PARAMS, **self.kwargs},

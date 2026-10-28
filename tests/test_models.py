@@ -31,12 +31,18 @@ def test_model_fit_and_predict(model_class, training_data):
     assert np.all(predictions >= 0)
 
 
-def test_poisson_rejects_non_integer_outcomes():
+def test_poisson_accepts_non_integer_outcomes():
     X = np.array([[0.0], [1.0], [2.0]])
     y = np.array([0.0, 1.5, 2.0])
 
-    with pytest.raises(ValueError, match="integer-valued"):
-        Poisson().fit(X, y)
+    model = Poisson(n_estimators=20)
+    model.fit(X, y)
+
+    predictions = model.predict(X)
+
+    assert predictions.shape == (3,)
+    assert np.all(np.isfinite(predictions))
+    assert np.all(predictions >= 0)
 
 
 def test_negative_binomial_rejects_non_integer_outcomes():
@@ -58,3 +64,20 @@ def test_hurdle_rejects_all_zero_outcomes():
 def test_tweedie_rejects_invalid_power():
     with pytest.raises(ValueError):
         Tweedie(power=2.0)
+def test_poisson_accepts_nonnegative_continuous_outcomes():
+    import numpy as np
+
+    from src.models import Poisson
+
+    rng = np.random.default_rng(42)
+    X = rng.normal(size=(120, 5))
+    y = np.exp(0.2 * X[:, 0]) * 0.7
+
+    model = Poisson(n_estimators=30, verbosity=-1)
+    model.fit(X, y)
+
+    predictions = model.predict(X)
+
+    assert predictions.shape == (len(y),)
+    assert np.all(np.isfinite(predictions))
+    assert np.all(predictions >= 0)
