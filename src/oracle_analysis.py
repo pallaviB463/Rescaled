@@ -4,7 +4,9 @@
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -50,24 +52,37 @@ def calculate_oracle_table(
     tau_level = np.asarray(truth["tau_level"], dtype=float)
     rows = []
 
+    # If the level-scale CATE is constant, there is no meaningful
+    # level-scale ranking against which to compare transformed rankings.
+    ranking_defined = np.ptp(tau_level) > 0
+
     for transform_name, transform in TRANSFORMS.items():
         for scale in scales:
             tau_transformed = true_transformed_cate(
                 truth, m=transform, a=scale
             )
 
-            rows.append({
-                "scenario": scenario,
-                "transform": transform_name,
-                "scale": float(scale),
-                "log10_scale": float(np.log10(scale)),
-                "rank_corr_vs_level": rank_corr(
+            if ranking_defined:
+                rank_corr_value = rank_corr(
                     tau_transformed, tau_level
-                ),
-                "top20_iou_vs_level": topk_overlap(
+                )
+                top20_iou_value = topk_overlap(
                     tau_transformed, tau_level, k=0.2
-                ),
-            })
+                )
+            else:
+                rank_corr_value = np.nan
+                top20_iou_value = np.nan
+
+            rows.append(
+                {
+                    "scenario": scenario,
+                    "transform": transform_name,
+                    "scale": float(scale),
+                    "log10_scale": float(np.log10(scale)),
+                    "rank_corr_vs_level": rank_corr_value,
+                    "top20_iou_vs_level": top20_iou_value,
+                }
+            )
 
     # Positive scaling cannot change ranks under the rank transform.
     # This is a useful invariant check, not an additional oracle curve.
@@ -84,12 +99,15 @@ def save_oracle_figure(table, output_path):
     }
     missing = required - set(table.columns)
     if missing:
-        raise ValueError(f"Oracle table is missing columns: {sorted(missing)}")
+        raise ValueError(
+            f"Oracle table is missing columns: {sorted(missing)}"
+        )
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), sharex=True)
 
     for name, group in table.groupby("transform", sort=False):
         group = group.sort_values("log10_scale")
+
         axes[0].plot(
             group["log10_scale"],
             group["rank_corr_vs_level"],
@@ -119,6 +137,7 @@ def save_oracle_figure(table, output_path):
 
     fig.suptitle("Figure 1. Oracle ranking sensitivity to outcome scale")
     fig.tight_layout()
+
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=200, bbox_inches="tight")

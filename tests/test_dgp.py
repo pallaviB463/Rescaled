@@ -159,3 +159,73 @@ def test_simulate_from_X_rejects_invalid_inputs():
 
     with pytest.raises(ValueError):
         simulate_from_X(X, W, sigma=-1)
+
+def test_identity_transformed_cate_equals_scaled_level_cate():
+    from src.dgp import true_transformed_cate
+
+    _, _, _, truth = simulate(
+        n=200,
+        scenario="opposed",
+        zero_rate=0.9,
+        seed=17,
+    )
+
+    for scale in (0.001, 0.1, 1.0, 100.0):
+        transformed_cate = true_transformed_cate(
+            truth,
+            m=lambda y: y,
+            a=scale,
+        )
+
+        np.testing.assert_allclose(
+            transformed_cate,
+            scale * truth["tau_level"],
+            rtol=1e-10,
+            atol=1e-10,
+        )
+
+
+def test_null_scenario_has_zero_transformed_cate():
+    from src.dgp import true_transformed_cate
+
+    _, _, _, truth = simulate(
+        n=200,
+        scenario="null",
+        zero_rate=0.9,
+        seed=18,
+    )
+
+    for transform in (np.log1p, np.arcsinh, np.sqrt):
+        transformed_cate = true_transformed_cate(
+            truth,
+            m=transform,
+            a=10.0,
+        )
+
+        np.testing.assert_allclose(
+            transformed_cate,
+            np.zeros(200),
+            atol=1e-10,
+        )
+
+
+def test_nonlinear_transformed_cate_is_finite_across_scales():
+    from src.dgp import true_transformed_cate
+
+    _, _, _, truth = simulate(
+        n=200,
+        scenario="opposed",
+        zero_rate=0.9,
+        seed=19,
+    )
+
+    for transform in (np.log1p, np.arcsinh):
+        for scale in (0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0):
+            transformed_cate = true_transformed_cate(
+                truth,
+                m=transform,
+                a=scale,
+            )
+
+            assert transformed_cate.shape == (200,)
+            assert np.all(np.isfinite(transformed_cate))
