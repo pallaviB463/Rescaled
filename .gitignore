@@ -11,3 +11,11 @@ __pycache__/
 .vscode/
 results/*
 !results/.gitkeep
+
+# Criteo dataset and generated semi-synthetic data
+data/raw/
+data/processed/
+
+# Local experiment and tuning audit scripts
+check_tuning_predictions.py
+check_tuning_split.py
