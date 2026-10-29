@@ -112,3 +112,30 @@ The working tree was clean immediately after the commit.
 ## 6. Conclusion
 
 The reviewed components passed their relevant tests, including the full project test suite. The audit identified no demonstrated test failure in the reviewed areas. However, passing tests alone do not establish complete methodological correctness. The metric estimators identified above and remaining project deliverables require further review before the overall Member P work can be considered fully signed off.
+## 7. Follow-Up Mathematical Audit of IPW Metrics
+
+A follow-up review examined `qini_auc` and `ipw_policy_value` in `src/metrics.py`.
+
+### IPW policy value
+
+The estimator uses inverse-propensity weighting for a deterministic policy that treats the selected top-k fraction of units. Under randomized treatment with a known, correctly specified constant propensity, it estimates the mean outcome under that policy.
+
+It does not, by itself, estimate incremental value over a baseline policy.
+
+### Qini-style cumulative-gain summary
+
+The existing implementation sorts units by predicted treatment effect and aggregates cumulative inverse-propensity-weighted outcome differences. It is retained as a custom cumulative-gain summary; it should not be described as a conventional normalized Qini coefficient without further methodological justification.
+
+### Validation improvements
+
+A shared validation helper was added for the two IPW metrics. It checks matching, nonempty input lengths, valid treatment assignments, finite scores and outcomes, and a strictly interior treatment propensity.
+
+Additional tests verify invalid propensity values, mismatched lengths, nonbinary treatment, non-finite inputs, and a hand-calculated IPW policy-value example.
+
+### Verification
+
+- Focused metric tests: **23 passed in 4.11 seconds**.
+- Full test suite: **118 passed in 18.86 seconds**.
+
+The formulas were preserved during this change. The audit clarifies their intended interpretation but does not establish that the custom Qini-style summary is equivalent to a standard Qini estimator.
+

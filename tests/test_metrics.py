@@ -101,3 +101,83 @@ def test_policy_regret_is_positive_for_suboptimal_selection():
     # are 2 and 0. The oracle instead selects effects 10 and 8.
     assert policy_value(predicted, true_effect, k=0.5) == pytest.approx(1.0)
     assert regret(predicted, true_effect, k=0.5) == pytest.approx(8.0)
+
+@pytest.mark.parametrize(
+    "metric",
+    [qini_auc, ipw_policy_value],
+)
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"e": 0.0},
+        {"e": 1.0},
+    ],
+)
+def test_ipw_metrics_reject_invalid_propensity(metric, kwargs):
+    with pytest.raises(ValueError):
+        metric(
+            tau_hat=[0.9, 0.1],
+            W=[1, 0],
+            y=[2.0, 1.0],
+            **kwargs,
+        )
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [qini_auc, ipw_policy_value],
+)
+def test_ipw_metrics_reject_mismatched_lengths(metric):
+    with pytest.raises(ValueError):
+        metric(
+            tau_hat=[0.9, 0.1],
+            W=[1, 0],
+            y=[2.0],
+        )
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [qini_auc, ipw_policy_value],
+)
+def test_ipw_metrics_reject_nonbinary_treatment(metric):
+    with pytest.raises(ValueError):
+        metric(
+            tau_hat=[0.9, 0.1],
+            W=[1, 2],
+            y=[2.0, 1.0],
+        )
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [qini_auc, ipw_policy_value],
+)
+def test_ipw_metrics_reject_nonfinite_inputs(metric):
+    with pytest.raises(ValueError):
+        metric(
+            tau_hat=[0.9, np.nan],
+            W=[1, 0],
+            y=[2.0, 1.0],
+        )
+
+    with pytest.raises(ValueError):
+        metric(
+            tau_hat=[0.9, 0.1],
+            W=[1, 0],
+            y=[2.0, np.inf],
+        )
+
+
+def test_ipw_policy_value_matches_hand_calculation():
+    # Top two scores select the first two observations.
+    # Only the first observation's treatment matches the policy.
+    # With e=0.5, the estimate is (2 / 0.5) / 2 = 2.
+    result = ipw_policy_value(
+        tau_hat=[0.9, 0.8, 0.1, 0.0],
+        W=[1, 0, 0, 1],
+        y=[2.0, 4.0, 1.0, 3.0],
+        k=0.5,
+        e=0.5,
+    )
+    assert result == pytest.approx(1.5)
