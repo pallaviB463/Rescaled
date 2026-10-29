@@ -82,3 +82,22 @@ def test_rank_corr_returns_nan_for_constant_predictions():
 
     result = rank_corr([1.0, 1.0, 1.0], [0.1, 0.2, 0.3])
     assert np.isnan(result)
+
+def test_topk_overlap_matches_intersection_over_union():
+    # With k=0.4, each ranking selects two of five observations.
+    # The selected sets overlap in one observation:
+    # IoU = intersection / union = 1 / 3.
+    a = [5, 4, 3, 2, 1]  # selects indices 0, 1
+    b = [1, 5, 4, 3, 2]  # selects indices 1, 2
+
+    assert topk_overlap(a, b, k=0.4) == pytest.approx(1 / 3)
+
+
+def test_policy_regret_is_positive_for_suboptimal_selection():
+    true_effect = np.array([10.0, 8.0, 2.0, 0.0])
+    predicted = np.array([0.0, 1.0, 9.0, 10.0])
+
+    # k=0.5 selects the two best predicted units, whose true effects
+    # are 2 and 0. The oracle instead selects effects 10 and 8.
+    assert policy_value(predicted, true_effect, k=0.5) == pytest.approx(1.0)
+    assert regret(predicted, true_effect, k=0.5) == pytest.approx(8.0)
