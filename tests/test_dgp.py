@@ -96,3 +96,66 @@ def test_transformed_cate_matches_observed_log1p_difference():
     expected_difference = true_cate.mean()
 
     assert abs(observed_difference - expected_difference) < 0.02
+
+def test_simulate_from_X_preserves_supplied_covariates_and_assignments():
+    from src.dgp import simulate_from_X
+
+    rng = np.random.default_rng(101)
+    X = rng.normal(size=(300, 10))
+    W = np.tile([0, 1], 150)
+
+    Y, truth = simulate_from_X(
+        X, W, scenario="opposed", zero_rate=0.9, seed=42
+    )
+
+    assert Y.shape == (300,)
+    assert truth["tau_level"].shape == (300,)
+    assert np.all(np.isfinite(Y))
+    assert np.all(Y >= 0)
+    assert set(np.unique(W)) == {0, 1}
+
+
+def test_simulate_from_X_is_reproducible():
+    from src.dgp import simulate_from_X
+
+    rng = np.random.default_rng(102)
+    X = rng.normal(size=(100, 10))
+    W = rng.binomial(1, 0.5, size=100)
+
+    Y1, truth1 = simulate_from_X(X, W, seed=17)
+    Y2, truth2 = simulate_from_X(X, W, seed=17)
+
+    np.testing.assert_array_equal(Y1, Y2)
+    np.testing.assert_array_equal(truth1["tau_level"], truth2["tau_level"])
+
+
+def test_simulate_from_X_null_has_zero_treatment_effect():
+    from src.dgp import simulate_from_X
+
+    rng = np.random.default_rng(103)
+    X = rng.normal(size=(100, 10))
+    W = rng.binomial(1, 0.5, size=100)
+
+    _, truth = simulate_from_X(X, W, scenario="null")
+
+    np.testing.assert_array_equal(truth["tau_level"], np.zeros(100))
+
+
+def test_simulate_from_X_rejects_invalid_inputs():
+    import pytest
+    from src.dgp import simulate_from_X
+
+    X = np.zeros((10, 10))
+    W = np.zeros(10)
+
+    with pytest.raises(ValueError):
+        simulate_from_X(X, W, scenario="unknown")
+
+    with pytest.raises(ValueError):
+        simulate_from_X(X, np.full(10, 2))
+
+    with pytest.raises(ValueError):
+        simulate_from_X(X, np.zeros(9))
+
+    with pytest.raises(ValueError):
+        simulate_from_X(X, W, sigma=-1)
