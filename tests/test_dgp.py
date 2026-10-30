@@ -55,7 +55,7 @@ def test_control_zero_rate_is_calibrated_within_one_percentage_point():
 
     assert abs(observed_control_zero_rate - 0.9) <= 0.01
 
-def test_level_cate_matches_observed_treated_minus_control_mean():
+
     import numpy as np
     from src.dgp import simulate
 
@@ -108,11 +108,57 @@ def test_simulate_from_X_preserves_supplied_covariates_and_assignments():
         X, W, scenario="opposed", zero_rate=0.9, seed=42
     )
 
-    assert Y.shape == (300,)
-    assert truth["tau_level"].shape == (300,)
-    assert np.all(np.isfinite(Y))
-    assert np.all(Y >= 0)
-    assert set(np.unique(W)) == {0, 1}
+def test_simulate_from_X_returns_correct_treatment_specific_truth():
+    from scipy.special import expit
+    from src.dgp import _base, calibrate_b0, effects, simulate_from_X
+
+    rng = np.random.default_rng(104)
+    X = rng.normal(size=(200, 10))
+    W = np.tile([0, 1], 100)
+
+    _, truth = simulate_from_X(
+        X,
+        W,
+        scenario="opposed",
+        zero_rate=0.9,
+        sigma=0.8,
+        seed=42,
+    )
+
+    shape, mu0 = _base(X)
+    de, di = effects(X, "opposed")
+    b0 = calibrate_b0(0.9, d=X.shape[1])
+
+    expected_p0 = expit(b0 + shape)
+    expected_p1 = expit(b0 + shape + de)
+    expected_mu1 = mu0 + di
+
+    np.testing.assert_allclose(truth["p0"], expected_p0)
+    np.testing.assert_allclose(truth["p1"], expected_p1)
+    np.testing.assert_allclose(truth["mu0"], mu0)
+    np.testing.assert_allclose(truth["mu1"], expected_mu1)
+    assert truth["sigma"] == 0.8
+
+def test_level_cate_matches_observed_treated_minus_control_mean():
+    _, W, Y, truth = simulate(
+        n=400_000,
+        scenario="opposed",
+        zero_rate=0.9,
+        seed=123,
+    )
+
+    treated = Y[W == 1]
+    control = Y[W == 0]
+
+    observed_difference = treated.mean() - control.mean()
+    expected_difference = truth["tau_level"].mean()
+
+    standard_error = np.sqrt(
+        treated.var(ddof=1) / len(treated)
+        + control.var(ddof=1) / len(control)
+    )
+
+    assert abs(observed_difference - expected_difference) <= 3 * standard_error
 
 
 def test_simulate_from_X_is_reproducible():
