@@ -219,3 +219,56 @@ class TransformedOutcomeLearner:
             raise ValueError("X has an incompatible shape.")
 
         return self.tau_model_.predict(X)
+
+class BackTransformLearner:
+    """Naive log1p outcome-model baseline with inverse transformation.
+
+    Fits separate outcome models for the control and treatment groups
+    on log1p-transformed outcomes, then estimates the treatment effect
+    by subtracting their expm1-transformed predictions.
+    """
+
+    def __init__(self, model=None, e=0.5):
+        _validate_propensity(e)
+        self.model = model if model is not None else L2()
+        self.e = e
+
+    def fit(self, X, W, y):
+        X, W, y = _validate_data(X, W, y, self.e)
+
+        if np.any(y < 0):
+            raise ValueError(
+                "BackTransformLearner requires nonnegative outcomes."
+            )
+
+        transformed_y = np.log1p(y)
+
+        self.model0_ = _fit_model(
+            self.model,
+            X[W == 0],
+            transformed_y[W == 0],
+        )
+
+        self.model1_ = _fit_model(
+            self.model,
+            X[W == 1],
+            transformed_y[W == 1],
+        )
+
+        self.n_features_in_ = X.shape[1]
+
+        return self
+
+    def predict(self, X):
+        X = np.asarray(X, dtype=float)
+
+        if X.ndim != 2 or X.shape[1] != self.n_features_in_:
+            raise ValueError("X has an incompatible shape.")
+
+        log_y0 = self.model0_.predict(X)
+        log_y1 = self.model1_.predict(X)
+
+        y0 = np.expm1(log_y0)
+        y1 = np.expm1(log_y1)
+
+        return y1 - y0

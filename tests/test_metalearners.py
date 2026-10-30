@@ -9,6 +9,7 @@ from src.metalearners import (
     XLearner,
     DRLearner,
     TransformedOutcomeLearner,
+    BackTransformLearner,
 )
 
 
@@ -79,4 +80,52 @@ def test_transformed_learner_rejects_negative_outcomes():
 
     learner = TransformedOutcomeLearner(transform="log1p")
     with pytest.raises(ValueError):
+        learner.fit(X, W, y)
+
+def test_back_transform_learner(training_data):
+    X, W, y = training_data
+
+    learner = BackTransformLearner(
+        model=L2(n_estimators=50, min_child_samples=10),
+        e=0.5,
+    )
+
+    learner.fit(X, W, y)
+    predictions = learner.predict(X[:30])
+
+    assert predictions.shape == (30,)
+    assert np.all(np.isfinite(predictions))
+
+
+def test_back_transform_learner_matches_manual_inverse(training_data):
+    X, W, y = training_data
+
+    learner = BackTransformLearner(
+        model=L2(n_estimators=50, min_child_samples=10),
+        e=0.5,
+    )
+
+    learner.fit(X, W, y)
+
+    X_test = X[:30]
+
+    expected = (
+        np.expm1(learner.model1_.predict(X_test))
+        - np.expm1(learner.model0_.predict(X_test))
+    )
+
+    np.testing.assert_allclose(
+        learner.predict(X_test),
+        expected,
+    )
+
+
+def test_back_transform_learner_rejects_negative_outcomes():
+    X = np.ones((20, 3))
+    W = np.tile([0, 1], 10)
+    y = np.arange(20, dtype=float) - 5
+
+    learner = BackTransformLearner()
+
+    with pytest.raises(ValueError, match="nonnegative"):
         learner.fit(X, W, y)
