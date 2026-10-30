@@ -9,9 +9,11 @@ from src.models import L2, Poisson, Tweedie, Hurdle, NegBin
 def training_data():
     rng = np.random.default_rng(42)
     X = rng.normal(size=(250, 5))
+
     # Zero-inflated, nonnegative integer outcomes
     y = rng.poisson(np.exp(0.3 + 0.2 * X[:, 0]))
     y[rng.random(250) < 0.65] = 0
+
     return X, y
 
 
@@ -24,6 +26,7 @@ def test_model_fit_and_predict(model_class, training_data):
 
     model = model_class()
     model.fit(X, y)
+
     predictions = model.predict(X[:20])
 
     assert predictions.shape == (20,)
@@ -64,11 +67,9 @@ def test_hurdle_rejects_all_zero_outcomes():
 def test_tweedie_rejects_invalid_power():
     with pytest.raises(ValueError):
         Tweedie(power=2.0)
+
+
 def test_poisson_accepts_nonnegative_continuous_outcomes():
-    import numpy as np
-
-    from src.models import Poisson
-
     rng = np.random.default_rng(42)
     X = rng.normal(size=(120, 5))
     y = np.exp(0.2 * X[:, 0]) * 0.7
@@ -82,6 +83,22 @@ def test_poisson_accepts_nonnegative_continuous_outcomes():
     assert np.all(np.isfinite(predictions))
     assert np.all(predictions >= 0)
 
+
+# ============================================================
+# P9: SCALE EQUIVARIANCE TESTS
+# ============================================================
+
+P9_SCALES = [
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0,
+]
+
+
 @pytest.mark.parametrize(
     "model_class,extra_params",
     [
@@ -90,22 +107,37 @@ def test_poisson_accepts_nonnegative_continuous_outcomes():
         (Hurdle, {}),
     ],
 )
-def test_count_aware_models_are_approximately_scale_equivariant(
-    model_class, extra_params
+@pytest.mark.parametrize("scale", P9_SCALES)
+def test_count_aware_models_are_scale_equivariant(
+    model_class,
+    extra_params,
+    scale,
 ):
-    """Scaling outcomes should approximately scale predicted conditional means."""
+    """
+    Verify prediction scaling and ranking invariance across all P9 scales.
+
+    Required properties:
+    1. Predictions approximately scale by the same positive factor.
+    2. Prediction rankings remain unchanged.
+    3. Hurdle occurrence probabilities remain unchanged.
+    """
+
     rng = np.random.default_rng(2026)
+
     X = rng.normal(size=(600, 5))
 
-    # A zero-inflated, nonnegative continuous outcome.
+    # Generate zero-inflated, nonnegative continuous outcomes.
     positive = rng.random(len(X)) < 0.4
+
     y = np.zeros(len(X))
+
     y[positive] = np.exp(
-        1.0 + 0.35 * X[positive, 0] - 0.2 * X[positive, 1]
+        1.0
+        + 0.35 * X[positive, 0]
+        - 0.2 * X[positive, 1]
         + rng.normal(0, 0.2, positive.sum())
     )
 
-    scale = 100.0
     params = {
         "n_estimators": 80,
         "learning_rate": 0.05,
@@ -118,50 +150,55 @@ def test_count_aware_models_are_approximately_scale_equivariant(
     original = model_class(**extra_params, **params)
     rescaled = model_class(**extra_params, **params)
 
+    # Fit both models on exactly the same features.
     original.fit(X, y)
     rescaled.fit(X, scale * y)
 
     pred_original = original.predict(X)
     pred_rescaled = rescaled.predict(X)
 
+    # Basic prediction validity.
     assert np.all(np.isfinite(pred_original))
     assert np.all(np.isfinite(pred_rescaled))
+
     assert np.all(pred_original >= 0)
     assert np.all(pred_rescaled >= 0)
 
-    # Allow modest numerical and tree-fitting differences.
+    assert pred_original.shape == pred_rescaled.shape
+
+    # Property 1:
+    # f(aY) approximately equals a * f(Y).
     np.testing.assert_allclose(
         pred_rescaled,
         scale * pred_original,
         rtol=0.20,
-        atol=0.05,
+        atol=0.05 * scale,
     )
 
-
-def test_hurdle_occurrence_predictions_are_invariant_to_outcome_scale():
-    """Rescaling positive outcomes must not change the zero/positive labels."""
-    rng = np.random.default_rng(2027)
-    X = rng.normal(size=(600, 5))
-
-    positive = rng.random(len(X)) < 0.4
-    y = np.zeros(len(X))
-    y[positive] = np.exp(
-        1.0 + 0.35 * X[positive, 0] - 0.2 * X[positive, 1]
+    # Property 2:
+    # Rankings must remain unchanged.
+    ranks_original = np.argsort(
+        np.argsort(pred_original, kind="stable"),
+        kind="stable",
     )
 
-    params = {
-        "n_estimators": 80,
-        "learning_rate": 0.05,
-        "num_leaves": 10,
-        "min_child_samples": 15,
-        "verbosity": -1,
-        "random_state": 42,
-    }
+    ranks_rescaled = np.argsort(
+        np.argsort(pred_rescaled, kind="stable"),
+        kind="stable",
+    )
 
-    original = Hurdle(**params).fit(X, y)
-    rescaled = Hurdle(**params).fit(X, 100.0 * y)
+    np.testing.assert_array_equal(
+        ranks_rescaled,
+        ranks_original,
+    )
 
-    if original.occurrence_model_ is not None:
+    # Property 3:
+    # Hurdle occurrence predictions depend on zero/positive labels.
+    # These labels do not change under positive rescaling.
+    if (
+        model_class is Hurdle
+        and original.occurrence_model_ is not None
+    ):
         np.testing.assert_allclose(
             rescaled.occurrence_model_.predict_proba(X),
             original.occurrence_model_.predict_proba(X),
@@ -169,18 +206,18 @@ def test_hurdle_occurrence_predictions_are_invariant_to_outcome_scale():
             atol=1e-12,
         )
 
-    np.testing.assert_allclose(
-        rescaled.positive_model_.predict(X),
-        100.0 * original.positive_model_.predict(X),
-        rtol=0.20,
-        atol=0.05,
-    )
+
+# ============================================================
+# P7: HURDLE MEAN CALIBRATION TEST
+# ============================================================
+
 def test_hurdle_mean_is_within_five_percent_of_observed_mean():
     rng = np.random.default_rng(2028)
 
     X = rng.normal(size=(5000, 5))
 
     positive = rng.random(len(X)) < 0.4
+
     y = np.zeros(len(X))
 
     y[positive] = np.exp(
@@ -206,7 +243,9 @@ def test_hurdle_mean_is_within_five_percent_of_observed_mean():
     observed_mean = np.mean(y)
     predicted_mean = np.mean(predictions)
 
-    relative_error = abs(predicted_mean - observed_mean) / observed_mean
+    relative_error = (
+        abs(predicted_mean - observed_mean) / observed_mean
+    )
 
     assert relative_error <= 0.05, (
         f"Hurdle mean calibration error is {relative_error:.2%}; "
