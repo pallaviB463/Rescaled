@@ -34,6 +34,22 @@ The implementation supports the following transformations:
 
 The rank transformation is invariant to positive rescaling, apart from the handling of ties.
 
+### Mathematical properties and transformation controls
+
+The square-root transformation satisfies the scale-equivariance identity:
+
+\[
+\sqrt{ay}=\sqrt{a}\sqrt{y}, \qquad a>0,\ y\geq 0.
+\]
+
+This identity was numerically verified for all seven configured scale factors.
+
+The identity, log1p, arcsinh, and square-root transformations all satisfy \(m(0)=0\).
+
+The normalized empirical-rank transformation is used as a negative control for scale sensitivity. Its output at zero is not necessarily zero because normalized ranks depend on the empirical sample and rank convention. With average ranks divided by sample size, the zero observation in a sample of four distinct values has normalized rank \(1/4\).
+
+Positive rescaling preserves empirical ranks, apart from numerical or tie-handling considerations.
+
 ## 4. Stress-grid configuration
 
 The stress grid evaluates the following control-group zero rates:
