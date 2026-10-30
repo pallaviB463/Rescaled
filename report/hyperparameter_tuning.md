@@ -1,127 +1,169 @@
-﻿# Hyperparameter Tuning Protocol
+﻿
+# Hyperparameter Tuning Protocol and Results
 
 ## 1. Purpose
 
-Define a reproducible and fair tuning procedure for comparing outcome models
-used in treatment-effect estimation. The current simulation runner uses fixed
-parameters; this document specifies the protocol to implement before making
-tuned-model performance claims.
+This experiment implements a reproducible hyperparameter-tuning procedure for comparing outcome models used in treatment-effect estimation.
 
-## 2. Models in scope
+The objective is to provide L2, Tweedie, and Hurdle models with equal candidate budgets, use validation data for model selection, and reserve the test set for final evaluation.
 
-The current runner supports these outcome-model choices for the T-learner:
+The tuning experiment is separate from the main transformation-scale simulation runner.
 
-- L2: LightGBM squared-error regression.
-- Tweedie: LightGBM Tweedie regression, currently using power 1.5.
-- Hurdle: a two-part model comprising an occurrence classifier and a
-  positive-outcome Gamma regression model.
+## 2. Models in Scope
 
-The other meta-learners currently use L2 in the simulation runner. They should
-not be described as independently tuned Tweedie or Hurdle experiments.
+The tuning implementation supports three outcome models:
 
-## 3. Data splitting and leakage prevention
+- **L2:** LightGBM squared-error regression.
+- **Tweedie:** LightGBM Tweedie regression with a tunable variance power.
+- **Hurdle:** A two-part model consisting of an occurrence classifier and a Gamma regression model for positive outcomes.
 
-For each scenario and simulation seed:
+The tuning implementation evaluates these models as arm-specific outcome models for the T-learner.
 
-1. Generate the simulated dataset using the specified DGP parameters.
-2. Split the data into training, validation, and test partitions using a
-   reproducible 60% / 20% / 20% split.
-3. Use the same partition assignments for every model being compared.
-4. Fit all preprocessing and models using training data only.
-5. Select hyperparameters using validation data only.
-6. Evaluate the selected configuration on the held-out test set once.
+The other meta-learners are not independently tuned as Tweedie or Hurdle experiments. Their pseudo-outcomes may contain negative values, so the main implementation retains L2 for those learners.
 
-Where treatment-effect ranking is evaluated, compute the ranking metrics on
-the test covariates using the known DGP ground truth. Oracle truth must not be
-used to select hyperparameters.
+## 3. Data Splitting and Leakage Prevention
 
-## 4. Search budget
+The tuning experiment uses a reproducible:
 
-Use 12 candidate configurations per model and per simulation seed.
+- 60% training partition.
+- 20% validation partition.
+- 20% held-out test partition.
 
-- Generate candidate configurations using a reproducible random search.
-- Use the same number of candidates for L2, Tweedie, and Hurdle.
-- Fix and record the search seed.
-- Record all attempted configurations, validation scores, failures, and the
-  selected configuration.
-- Do not increase one model's budget after inspecting its test performance.
+The same split is used across the outcome models being compared.
 
-Equal candidate counts provide a comparable search budget, although total
-runtime may differ across model classes.
+The procedure is:
 
-## 5. Initial search spaces
+1. Generate the simulated dataset.
+2. Split observations into training, validation, and test partitions.
+3. Fit candidate models using training data.
+4. Select hyperparameters using validation performance.
+5. Refit the selected configuration on the combined training and validation observations.
+6. Evaluate the selected model on the held-out test partition.
 
-Use the following proposed candidate values:
+The test set is not used for hyperparameter selection.
+
+## 4. Search Budget and Candidate Spaces
+
+Each model receives 12 candidate configurations in the documented experiment.
+
+The base search space is:
 
 | Parameter | Candidate values |
 |---|---|
 | `n_estimators` | 100, 200, 400 |
 | `learning_rate` | 0.03, 0.05, 0.10 |
 | `num_leaves` | 7, 15, 31 |
+| `max_depth` | 3, 5, 7, -1 |
 | `min_child_samples` | 20, 50, 100 |
 
-Sample 12 valid configurations reproducibly from this space for each model.
-Do not evaluate the full Cartesian product.
+Tweedie additionally searches over:
 
-For Tweedie, additionally evaluate `power` from 1.2, 1.5, and 1.8.
+| Parameter | Candidate values |
+|---|---|
+| `power` | 1.1, 1.3, 1.5, 1.7 |
 
-For Hurdle, apply the selected LightGBM settings consistently to its
-occurrence and positive-outcome components unless a separate component-level
-search is explicitly specified in advance.
+The implementation uses reproducible candidate generation and records candidate configurations, validation scores, selection metrics, and failures.
 
-These ranges are proposed search spaces, not settings already evaluated.
+Equal candidate counts provide a comparable search budget in terms of the number of configurations evaluated. They do not imply equal computational cost across model classes.
 
-## 6. Model selection metric
+## 5. Model Selection Metrics
 
-Use validation RMSE of the factual outcome prediction as the primary selection
-metric, calculated on the same validation observations for every candidate.
+Model selection uses validation performance:
 
-For a T-learner, the factual prediction is the control-model prediction for
-control observations and the treated-model prediction for treated observations.
+- **L2:** Validation RMSE.
+- **Hurdle:** Validation RMSE.
+- **Tweedie:** Mean Tweedie deviance.
 
-Select the candidate with the lowest validation RMSE. Record the validation
-sample size and score.
+For the T-learner, factual predictions are obtained from the relevant treatment-arm outcome model.
 
-If a candidate fails to fit or produces non-finite predictions, record the
-failure and do not silently replace its score with a favorable value.
+The selection metrics differ across model classes. In particular, Tweedie deviance and RMSE are not directly comparable numerical scores. Model selection is performed within each model class using its specified metric.
 
-## 7. Final evaluation
+Failed candidates and non-finite results are recorded rather than silently treated as successful evaluations.
 
-After selection, refit the selected configuration on the combined training
-and validation partitions, then evaluate on the held-out test partition.
+## 6. Documented Validation Experiment
 
-Report test outcome-prediction performance separately from treatment-effect
-metrics, including:
+A focused validation experiment was executed with the following settings:
 
-- Rank correlation between estimated and true treatment effects.
-- Top-20% ranking overlap, defined by the implementation's intersection over
-  union metric.
-- Policy value.
-- Regret relative to the oracle policy.
-- Ranking stability against the scale-1 reference where applicable.
+| Setting | Value |
+|---|---|
+| Scenario | Opposed |
+| Sample size | 5,000 |
+| Control zero-rate target | 0.90 |
+| Positive-outcome log-scale standard deviation | 0.8 |
+| Treatment propensity | 0.5 |
+| Simulation seed | 42 |
+| Candidate budget per model | 12 |
+| Outcome models | L2, Tweedie, Hurdle |
 
-Report the number of successful and failed candidates and the selected
-hyperparameters for each model and seed.
+The experiment command was:
 
-## 8. Reproducibility requirements
+```powershell
+python -m src.run_tuning --n 5000 --zero-rate 0.9 --sigma 0.8 --e 0.5 --scenarios opposed --models L2 Tweedie Hurdle --seeds 42 --candidates 12 --output results/p8_tuning_validation.csv
+```
 
-Record the following for each experiment:
+### 6.1 Candidate Evaluation Results
 
-- Scenario, sample size, control zero-rate setting, and outcome noise.
-- Simulation seed and search seed.
-- Training, validation, and test split assignments or their reproducible seeds.
-- Candidate configurations and validation scores.
-- Selected hyperparameters and test metrics.
-- Software versions and any failed runs.
+| Model | Successful candidates | Failed candidates | Selected validation metric |
+|---|---:|---:|---:|
+| L2 | 12 | 0 | RMSE = 10.323362 |
+| Tweedie | 12 | 0 | Tweedie deviance = 8.034729 |
+| Hurdle | 12 | 0 | RMSE = 10.254938 |
 
-Use multiple simulation seeds for final robustness claims. A single-seed run
-is an initial experiment, not evidence of multi-seed stability.
+All 36 candidate evaluations completed successfully.
 
-## 9. Implementation status
+The selected Tweedie configuration used power 1.3.
 
-Status: protocol specified; tuning implementation and tuned experiments are
-pending.
+### 6.2 Held-Out Test RMSE
 
-The current runner uses fixed LightGBM settings and fixed Tweedie power.
-This document must not be interpreted as evidence that the proposed search
-has already been executed.
+| Model | Test RMSE |
+|---|---:|
+| L2 | 13.144430 |
+| Tweedie | 13.139679 |
+| Hurdle | 13.169340 |
+
+These test RMSE values describe factual outcome prediction in this particular experiment. They should not be interpreted as a comprehensive ranking of treatment-effect estimation quality.
+
+Because the models use different validation selection metrics, the validation scores in Section 6.1 should not be compared directly across model classes.
+
+## 7. Interpretation and Limitations
+
+The validation experiment establishes that the implemented tuning pipeline can evaluate all three outcome models under an equal candidate-count budget and complete the train-validation-test workflow without candidate failures.
+
+The test RMSE values are close in this single experiment. This result alone does not establish that one model is consistently better than another.
+
+The experiment is limited to:
+
+- One treatment-effect scenario: opposed.
+- One sample size: 5,000.
+- One control zero-rate target: 0.90.
+- One simulation seed: 42.
+- Twelve candidate configurations per model.
+
+Consequently, these results are a validation run, not evidence of multi-scenario or multi-seed robustness.
+
+The optional comparison of Gamma and lognormal positive-outcome components within the Hurdle model has not been implemented as a separate tuning experiment and should not be claimed as completed.
+
+## 8. Reproducibility and Output Files
+
+The experiment records candidate-level history and summary results.
+
+Primary output:
+
+- `results/p8_tuning_validation.csv`
+
+The candidate history contains the attempted configurations, validation metrics, selection metric, and run status. The summary records the selected model configurations and their evaluation results.
+
+The implementation is maintained in:
+
+- `src/tuning.py`
+- `src/run_tuning.py`
+- `tests/test_tuning.py`
+- `tests/test_run_tuning.py`
+
+## 9. Implementation Status
+
+**Status: Implemented and validation experiment completed.**
+
+The tuning implementation and its tests are complete. The documented validation run evaluated 12 candidates each for L2, Tweedie, and Hurdle, with all 36 candidate evaluations successful.
+
+Broader robustness claims require additional scenarios and simulation seeds.
