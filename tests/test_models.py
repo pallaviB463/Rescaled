@@ -175,3 +175,40 @@ def test_hurdle_occurrence_predictions_are_invariant_to_outcome_scale():
         rtol=0.20,
         atol=0.05,
     )
+def test_hurdle_mean_is_within_five_percent_of_observed_mean():
+    rng = np.random.default_rng(2028)
+
+    X = rng.normal(size=(5000, 5))
+
+    positive = rng.random(len(X)) < 0.4
+    y = np.zeros(len(X))
+
+    y[positive] = np.exp(
+        1.0
+        + 0.35 * X[positive, 0]
+        - 0.2 * X[positive, 1]
+        + rng.normal(0, 0.2, positive.sum())
+    )
+
+    model = Hurdle(
+        n_estimators=200,
+        learning_rate=0.05,
+        num_leaves=15,
+        min_child_samples=50,
+        verbosity=-1,
+        random_state=42,
+    )
+
+    model.fit(X, y)
+
+    predictions = model.predict(X)
+
+    observed_mean = np.mean(y)
+    predicted_mean = np.mean(predictions)
+
+    relative_error = abs(predicted_mean - observed_mean) / observed_mean
+
+    assert relative_error <= 0.05, (
+        f"Hurdle mean calibration error is {relative_error:.2%}; "
+        "expected <= 5%."
+    )
