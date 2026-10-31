@@ -149,6 +149,54 @@ def plot_fig4_regret_heatmap(df, out_path):
     print(f"Saved Figure 4 to {out_path}")
 
 
+def plot_fig3_policy_value_vs_k(mens_csv, womens_csv, out_path, learner_choice="T"):
+    """Fig 3: Policy value vs targeting budget fraction k in Hillstrom field trials."""
+    if not (os.path.exists(mens_csv) and os.path.exists(womens_csv)):
+        print(f"Skipping Figure 3: Hillstrom CSV files not found.")
+        return
+
+    df_m = pd.read_csv(mens_csv)
+    df_w = pd.read_csv(womens_csv)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5), sharey=True)
+    k_cols = [("ipw_value_k10", 0.10), ("ipw_value_k20", 0.20),
+              ("ipw_value_k30", 0.30), ("ipw_value_k50", 0.50)]
+    k_vals = [kc[1] for kc in k_cols]
+
+    pipelines_to_show = [
+        ("Tweedie", "level", 1.0, "teal", "--", "s", "Tweedie ($a=1.0$)"),
+        ("Hurdle", "level", 1.0, "red", "-", "*", "Hurdle ($a=1.0$)"),
+        ("Poisson", "level", 1.0, "green", "-.", "v", "Poisson ($a=1.0$)"),
+        ("TransformedL2", "log1p", 1.0, "blue", "-", "o", r"$\log(1+y)$ ($a=1.0$ dollars)"),
+        ("TransformedL2", "log1p", 0.01, "cornflowerblue", ":", "^", r"$\log(1+ay)$ ($a=0.01$ hundreds)"),
+        ("TransformedL2", "sqrt", 1.0, "darkorange", "-.", "d", "Sqrt ($a=1.0$)"),
+    ]
+
+    for ax, df, title in zip(axes, [df_m, df_w], ["Men's E-Mail Campaign", "Women's E-Mail Campaign"]):
+        df_l = df[df["learner"] == learner_choice]
+        for fam, tr, a, col, ls, m, lbl in pipelines_to_show:
+            sub = df_l[(df_l["family"] == fam) & (df_l["transform"] == tr) & (np.isclose(df_l["scale"], a))]
+            if len(sub) == 0:
+                continue
+            vals = [sub[kc[0]].mean() for kc in k_cols]
+            ax.plot(k_vals, vals, label=lbl, color=col, linestyle=ls, marker=m, linewidth=2.0, markersize=7)
+
+        ax.set_title(f"{title} (Learner: {learner_choice})", fontsize=12, pad=10)
+        ax.set_xlabel(r"Targeting Budget Fraction $k$ (Top $k\%$ Treated)", fontsize=11)
+        ax.set_xticks(k_vals)
+        ax.set_xticklabels(["10%", "20%", "30%", "50%"])
+        ax.grid(True, linestyle="--", alpha=0.5)
+
+    axes[0].set_ylabel(r"IPW Policy Value (\$/customer)", fontsize=11)
+    axes[1].legend(bbox_to_anchor=(1.02, 1), loc="upper left", frameon=True, fontsize=10)
+    plt.suptitle("Figure 3: Policy Value vs. Targeting Budget $k$ under Unit Scalings in Hillstrom Trial",
+                 fontsize=13, fontweight="bold", y=1.02)
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"Saved Figure 3 to {out_path}")
+
+
 def run_analysis(results_dir, out_dir="figures"):
     os.makedirs(out_dir, exist_ok=True)
     df = aggregate(results_dir)
@@ -156,6 +204,15 @@ def run_analysis(results_dir, out_dir="figures"):
 
     # Fig 2
     plot_fig2_rank_stability(df, os.path.join(out_dir, "fig2_rank_stability.png"), scenario="opposed")
+
+    # Fig 3
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    m_csv = os.path.join(base_dir, "..", "results", "hillstrom_mens.csv")
+    w_csv = os.path.join(base_dir, "..", "results", "hillstrom_womens.csv")
+    if not (os.path.exists(m_csv) and os.path.exists(w_csv)):
+        m_csv = os.path.join(results_dir, "..", "hillstrom_mens.csv")
+        w_csv = os.path.join(results_dir, "..", "hillstrom_womens.csv")
+    plot_fig3_policy_value_vs_k(m_csv, w_csv, os.path.join(out_dir, "fig3_policy_value.png"))
 
     # Fig 4
     plot_fig4_regret_heatmap(df, os.path.join(out_dir, "fig4_regret_heatmap.png"))
