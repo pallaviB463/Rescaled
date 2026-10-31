@@ -78,31 +78,73 @@ This paper investigates the central question: \textbf{Does the choice of unit sc
 % -------------------------------------------------------------
 \section{Related Work}
 \label{sec:related_work}
-\noindent \textbf{[Owner: Member P]}
 
-\cite{chen2024logs} on logs with zeros; \cite{mullahy2020much} on two-part hurdle specifications; \cite{kunzel2019metalearners} on S-, T-, and X-learners; \cite{kennedy2023towards} on doubly robust CATE estimation; \cite{nie2021quasi} on R-learners; \cite{curth2021nonparametric} on meta-learner inductive biases.
+The practice of transforming skewed, zero-heavy outcomes has deep roots in empirical economics and applied machine learning, yet its implications for causal decision-making remain contentious.
 
-% -------------------------------------------------------------
+\subsection{Outcome Transformations and the Problem of Zeros}
+Applied researchers frequently apply $\log(1+y)$ or $\operatorname{arcsinh}(y)$ to stabilize variance and mitigate the influence of extreme positive values. However, \cite{chen2024logszeros} established that for the population Average Treatment Effect (ATE), estimating effects on transformed outcomes yields quantities that depend arbitrarily on the measurement units of $y$ whenever the treatment affects the extensive margin (the probability of observing a non-zero outcome). When measurement units change (e.g., from dollars to cents or thousands of dollars), the implied weighting between extensive and intensive margins shifts arbitrarily. Further methodological critiques by \cite{mullahy2024whytransform} highlight that transformed linear models often fail to identify structural parameters or expected level outcomes in health economics.
+
+\subsection{Two-Part and Count-Aware Formulations}
+To avoid transformation artifacts, two-part hurdle specifications \citep{mullahy2024whytransform} model the binary event $\mathbf{1}(Y>0)$ and the continuous positive amount $Y \mid Y>0$ via separate stochastic processes. In count and revenue modeling, quasi-maximum likelihood Poisson regression with a log link \citep{chen2024logszeros} and compound Poisson-Gamma Tweedie models provide consistent conditional mean estimators without requiring integer constraints, preserving scale equivariance. Nonparametric Bayesian extensions for zero-inflated treatment effects have also been explored by \cite{oganisian2021zeroinflated} and \cite{kim2024zeroinflatedcate}.
+
+\subsection{Heterogeneous Effects, Meta-Learners, and Uplift Modeling}
+In personalized targeting, the primary objective is to rank individuals by their Conditional Average Treatment Effect (CATE), $\tau(X) = \E[Y(1) - Y(0) \mid X]$. Meta-learning frameworks decompose CATE estimation into supervised regression sub-problems: S- and T-learners \citep{kunzel2019metalearners}, the multi-stage X-learner \citep{kunzel2019metalearners}, Quasi-Oracle R-learners \citep{nie2021quasioracle}, and Doubly Robust (DR) estimators \citep{kennedy2023towards}. \cite{curth2021nonparametric} analyze the inductive biases of these architectures, demonstrating that naive single-model learners often shrink treatment contrasts to zero. In direct marketing, revenue uplift modeling combines conversion and spend effects \citep{gubela2020response, baier2022profit, he2024rankability}, but existing surveys \citep{gutierrez2017uplift, zhang2022unified} have not systematically addressed how unit scaling choices silently alter customer prioritization across meta-learner architectures.
+
 \section{Theory and Estimands}
 \label{sec:theory}
-\noindent \textbf{[Owner: Member P]}
 
-\subsection{Distinction Between Estimands: Level vs. Transformed}
-\begin{itemize}
-    \item \textbf{True Business Estimand:} $\taulevel(X) = \E[Y(1) - Y(0) \mid X]$. All targeting evaluation metrics (rank correlation, policy value at budget $\budgetk$, and regret) are evaluated strictly against $\taulevel$.
-    \item \textbf{Transformed Proxy Estimand:} $\tauma(X) = \E[m(aY(1)) - m(aY(0)) \mid X]$, used only as an internal target for transformed estimators.
-\end{itemize}
+\subsection{Level-Scale vs. Transformed-Scale Estimands}
+Let $X \in \R^d$ denote pre-treatment covariates, $W \in \{0, 1\}$ randomized treatment assignment, and $Y(1), Y(0) \ge 0$ potential outcomes under treatment and control.
 
-\subsection{Core Hypotheses (H1--H4)}
-\begin{itemize}
-    \item \textbf{H1 (Scale Dependence):} Rankings under log-like transforms change with unit scale $a$ when extensive and intensive effects disagree.
-    \item \textbf{H2 (Asymptotic Limits):} As $a \to 0$, ranking converges to the level ranking; as $a \to \infty$, ranking converges to the extensive margin (purchase probability) ranking.
-    \item \textbf{H3 (Unit Equivariance):} Log-link count-aware models (Poisson, Tweedie, Hurdle) are unit-equivariant, preserving identical rankings across all $a$.
-    \item \textbf{H4 (Policy Regret):} Count-aware models achieve lower policy regret than transformed models when extensive and intensive margins oppose.
-    \item \textbf{Negative Controls:} Square root ($\sqrt{ay} = \sqrt{a}\sqrt{y}$) and empirical rank transforms are scale-homogeneous or unit-invariant; their rankings must not vary with $a$.
-\end{itemize}
+\begin{definition}[Level-Scale CATE]
+The primary business estimand is the expected incremental outcome on the original scale:
+\begin{equation}
+\taulevel(X) = \E[Y(1) - Y(0) \mid X].
+\end{equation}
+All real-world decision metrics---Spearman rank correlation with truth, top-$k\%$ policy value, and regret---are evaluated strictly against $\taulevel(X)$.
+\end{definition}
 
-% -------------------------------------------------------------
+\begin{definition}[Transformed-Scale Estimand]
+For an outcome transformation $m: \R_{\ge 0} \to \R_{\ge 0}$ satisfying $m(0)=0$ and a positive scale parameter $a > 0$, the transformed estimand is:
+\begin{equation}
+\tauma(X) = \E[m(aY(1)) - m(aY(0)) \mid X].
+\end{equation}
+In general, because non-linear transformations and conditional expectations do not commute, $\tauma(X) \neq m(a\taulevel(X))$.
+\end{definition}
+
+\subsection{Extensive and Intensive Margin Decomposition}
+Following the two-part structure, let $p_w(X) = P(Y(w) > 0 \mid X)$ be the purchase probability and $s_w(X) = \E[Y(w) \mid Y(w) > 0, X]$ be the expected positive spend. The level CATE decomposes exactly into:
+\begin{equation}
+\boxed{\taulevel(X) = \underbrace{[p_1(X) - p_0(X)] s_0(X)}_{\text{Extensive Margin Shift}} + \underbrace{p_1(X) [s_1(X) - s_0(X)]}_{\text{Intensive Margin Shift}}.}
+\end{equation}
+
+\subsection{Asymptotic Scale Limits (Hypothesis H2)}
+\begin{proposition}[Small-Scale Limit, $a \to 0$]
+For differentiable transformations satisfying $m(0) = 0$ and $m'(0) = 1$ (including $\log(1+ay)$ and $\operatorname{arcsinh}(ay)$), dominated convergence yields:
+\begin{equation}
+\lim_{a \to 0^+} \frac{\tauma(X)}{a} = \taulevel(X).
+\end{equation}
+Thus, as the unit scale becomes infinitesimal, the transformed-outcome ranking approaches the true dollar (level) ranking.
+\end{proposition}
+
+\begin{proposition}[Large-Scale Limit, $a \to \infty$]
+Under lognormal conditional spend $\log Y(w) \mid Y(w)>0, X \sim \mathcal{N}(\mu_w(X), \sigma^2)$, as $a \to \infty$:
+\begin{equation}
+\tau_{\log 1p, a}(X) = [p_1(X) - p_0(X)] \log a + [p_1(X)\mu_1(X) - p_0(X)\mu_0(X)] + o(1).
+\end{equation}
+As $a \to \infty$, the leading term is dominated by the extensive margin difference $[p_1(X) - p_0(X)]$. The ranking therefore converges to the customer ranking by probability of conversion rather than spend magnitude.
+\end{proposition}
+
+\subsection{Scale Equivariance of Count-Aware Models (Hypothesis H3)}
+For a log-link conditional mean model $f(X; \beta) = \exp(X\beta)$ (Poisson, Tweedie, or Hurdle second stage), multiplying the outcome by scalar $a > 0$ shifts the intercept by $\log a$ while leaving feature coefficients $\beta$ invariant:
+\begin{equation}
+\hat{f}_{aY}(X) = a \hat{f}_Y(X).
+\end{equation}
+Consequently, predicted treatment contrasts satisfy $\hat{\tau}_{aY}(X) = a \hat{\tau}_Y(X)$. Because $a > 0$, individual rankings are strictly invariant:
+\begin{equation}
+\operatorname{Rank}(\hat{\tau}_{aY}(X)) = \operatorname{Rank}(\hat{\tau}_Y(X)) \quad \forall a > 0.
+\end{equation}
+
 \section{Methodology}
 \label{sec:methods}
 \noindent \textbf{[Owner: Member P (Outcome Models), Member Q (Meta-Learners)]}
@@ -277,7 +319,60 @@ Based on our theoretical, simulation, and empirical benchmarks, we propose the f
 \appendix
 \section{Data Generating Process (DGP) Formulas}
 \label{app:dgp}
-\noindent \textbf{[Owner: Member P]}
+
+This appendix provides the full mathematical specification of the synthetic data-generating process used throughout our benchmarks.
+
+\subsection{Covariates and Assignment}
+For each unit $i = 1, \dots, n$, pre-treatment covariates are drawn from a standard multivariate normal distribution:
+\begin{equation}
+X_i \sim \mathcal{N}(0, I_d), \quad d=10.
+\end{equation}
+Binary treatment assignment is drawn independently according to treatment propensity $e = 0.5$:
+\begin{equation}
+W_i \sim \operatorname{Bernoulli}(e).
+\end{equation}
+
+\subsection{Baseline Functions and Intercept Calibration}
+The baseline log-odds of purchase and log-spend mean are governed by:
+\begin{align}
+g(X) &= 0.8 X_1 - 0.5 X_2, \\
+h(X) &= 2.5 + 0.5 X_3.
+\end{align}
+The control arm purchase probability is given by $p_0(X) = \operatorname{expit}(b_0 + g(X))$, where the intercept $b_0$ is numerically calibrated using Brent's method over a 200,000-sample reference draw to satisfy:
+\begin{equation}
+\E_{X \sim \mathcal{N}(0, I_d)} [p_0(X)] = 1 - r,
+\end{equation}
+where $r \in \{0.70, 0.90, 0.98\}$ represents the target zero rate in the control group.
+
+\subsection{Scenario-Specific Treatment Shifts}
+Let $Z_3 = X_4$ and $Z_4 = X_5$ denote the fourth and fifth covariate dimensions. The shifts in purchase log-odds ($\delta_p(X)$) and log-spend mean ($\delta_s(X)$) are defined across six scenarios:
+\begin{equation}
+(\delta_p(X), \delta_s(X)) = \begin{cases}
+(0, 0), & \text{Null}, \\
+(0.4, 0.15), & \text{Homogeneous}, \\
+(0.3 + 0.8 Z_3, 0), & \text{Extensive Margin Only}, \\
+(0, 0.2 + 0.4 Z_4), & \text{Intensive Margin Only}, \\
+(0.3 + 0.8 Z_3, 0.2 + 0.4 Z_3), & \text{Aligned Margins}, \\
+(0.3 + 0.8 Z_3, 0.2 - 0.4 Z_3), & \text{Opposed Margins}.
+\end{cases}
+\end{equation}
+
+\subsection{Potential Outcomes and Ground Truth CATE}
+For treatment status $w \in \{0, 1\}$:
+\begin{align}
+p_w(X) &= \operatorname{expit}(b_0 + g(X) + w \delta_p(X)), \\
+\mu_w(X) &= h(X) + w \delta_s(X).
+\end{align}
+The purchase indicator $B(w) \mid X \sim \operatorname{Bernoulli}(p_w(X))$ and positive spend $S(w) \mid X = \exp(\mu_w(X) + \epsilon)$ with $\epsilon \sim \mathcal{N}(0, \sigma^2)$ ($\sigma=0.8$) determine potential outcome $Y(w) = B(w) S(w)$.
+
+Because $\E[S(w) \mid X] = \exp(\mu_w(X) + \sigma^2/2)$, the exact level-scale CATE is:
+\begin{equation}
+\boxed{\taulevel(X) = \exp\left(\frac{\sigma^2}{2}\right) \left[ p_1(X) e^{\mu_1(X)} - p_0(X) e^{\mu_0(X)} \right].}
+\end{equation}
+For any nonlinear transformation $m$ with $m(0)=0$, the transformed estimand $\tauma(X)$ is computed to machine precision using 40-point Gauss-Hermite quadrature:
+\begin{equation}
+\tauma(X) = p_1(X) \int_{-\infty}^{\infty} m\left(a e^{\mu_1(X) + \sigma z}\right) \phi(z) dz - p_0(X) \int_{-\infty}^{\infty} m\left(a e^{\mu_0(X) + \sigma z}\right) \phi(z) dz.
+\end{equation}
 
 \section{Reproducibility Protocol and Environment}
 \label{app:repro}

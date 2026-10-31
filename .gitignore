@@ -15,7 +15,10 @@ results/*
 results/main/
 *.tmp
 
-# Large raw datasets (>100MB exceeds GitHub limit)
+# Data files
 data/*.gz
 data/*.csv.gz
 data/criteo-research-uplift-v2.1.csv.gz
+data/processed/
+data/*.parquet
+scratch/
