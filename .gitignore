@@ -1,21 +1,35 @@
-
 .venv/
 venv/
 env/
+
 __pycache__/
 *.py[cod]
+*.pyo
+
 .pytest_cache/
 .ipynb_checkpoints/
+
 .env
 .env.*
-.vscode/
-results/*
-!results/.gitkeep
+!.env.example
 
-# Criteo dataset and generated semi-synthetic data
+.vscode/
+.idea/
+
+results/_local_only/
+
+*.bak
+*_smoke.csv
+*_smoke_summary.csv
+*_smoke_history.csv
+*_pilot.csv
+*_pilot_summary.csv
+_scenario_write_test.csv
+
+results/tuning/*_fixed.csv
+
 data/raw/
 data/processed/
 
-# Local experiment and tuning audit scripts
 check_tuning_predictions.py
 check_tuning_split.py

@@ -1,0 +1,2 @@
+scenario,learner,transform,scale,rank_corr,topk_overlap,policy_value,regret,status,error,seed,n,zero_rate,sigma,e
+opposed,NaiveBackTransform,log1p,1.0,0.3882565373603392,0.3745704467353952,2.0222566203846664,0.7713618687847759,ok,,42,1000,0.9,0.8,0.5

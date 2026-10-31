@@ -1,0 +1,2 @@
+scenario,learner,transform,scale,rank_corr,topk_overlap,policy_value,regret,rho_vs_a1
+opposed,T:Hurdle,level,1.0,0.4100744459186115,0.39629860844580633,2.180215282340068,0.7050534573119375,

@@ -86,7 +86,23 @@ Rescaled/
 │   └── scenarios_stress_grid.md
 │
 ├── results/
-│   └── Experimental outputs and analysis results
+│   ├── simulations/
+│   │   └── Simulation outputs and summary metrics
+│   │
+│   ├── oracle_analysis/
+│   │   └── Oracle rankings, policy values, robustness results and figures
+│   │
+│   ├── tuning/
+│   │   └── Hyperparameter tuning experiments and comparisons
+│   │
+│   ├── backtransform/
+│   │   └── Back-transformation baselines and ablation results
+│   │
+│   ├── null_audit/
+│   │   └── Null-scenario audits and prediction magnitude analysis
+│   │
+│   └── model_comparisons/
+│       └── Model and six-scenario comparison results
 │
 ├── src/
 │   ├── dgp.py
@@ -103,8 +119,11 @@ Rescaled/
 │   └── Automated tests for project modules
 │
 ├── requirements.txt
+├── .gitignore
 └── README.md
 ```
+
+**Note:** Intermediate smoke tests, pilot experiments, duplicate files, backups, and other temporary outputs are maintained locally under `results/_local_only/` and are excluded from version control.
 
 ---
 
@@ -211,15 +230,34 @@ python -m pytest tests/test_metalearners.py -v
 
 ---
 
+## Experimental Results
+
+The `results/` directory contains the selected experimental outputs generated during the project.
+
+| Directory | Contents |
+|---|---|
+| `simulations/` | Simulation outputs and zero-rate grid experiments |
+| `oracle_analysis/` | Oracle policy values, ranking results, robustness analysis, and figures |
+| `tuning/` | Causal tuning comparisons, validation results, tuning histories, and summary analysis |
+| `backtransform/` | Back-transformation baseline and ablation results |
+| `null_audit/` | Null-scenario audit results and prediction magnitude analysis |
+| `model_comparisons/` | Comparisons across outcome models, learners, and simulation scenarios |
+
+The tuning directory also contains `summarize_causal_comparison.py`, which combines the L2, Tweedie, and Hurdle causal tuning results and calculates mean and standard deviation across seeds.
+
+The committed results focus on selected experimental outputs rather than temporary smoke tests, pilot runs, or intermediate files.
+
+---
+
 ## Documentation
 
 The `report/` directory contains documentation describing important experimental components and research contributions.
 
 | Document | Description |
 |---|---|
-| `criteo_semisynthetic.md` | Documentation of the Criteo semi-synthetic experiment and workflow. |
-| `backtransform.md` | Documentation of back-transformation methods and related analysis. |
-| `scenarios_stress_grid.md` | Documentation of simulation scenarios and the stress-test grid. |
+| `criteo_semisynthetic.md` | Documentation of the Criteo semi-synthetic experiment and workflow |
+| `backtransform.md` | Documentation of back-transformation methods and related analysis |
+| `scenarios_stress_grid.md` | Documentation of simulation scenarios and the stress-test grid |
 
 ---
 
@@ -257,7 +295,7 @@ Key areas of investigation include:
 
 The core implementation and research activities assigned to **Member P (P1–P15)** have been completed.
 
-The repository contains the corresponding implementation, tests, simulation workflows, analysis, and documentation.
+The repository contains the corresponding implementation, tests, simulation workflows, experimental results, analysis, and documentation.
 
 Further project contributions and extensions can be developed independently without modifying or removing the completed work.
 
