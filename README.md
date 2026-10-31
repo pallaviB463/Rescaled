@@ -195,13 +195,6 @@ python src/rebuild_figures.py
 
 ---
 
-## Team Contributions
-
-* **Member P:** Base learner implementation, hyperparameter tuning architecture, oracle-based sensitivity analysis, and semi-synthetic Criteo baseline.
-* **Member Q:** Simulation engine, Hillstrom empirical pipelines, figure generation, theoretical asymptotic proofs, and final review presentation deck.
-
----
-
 ## License
 
 This project is licensed for academic and research purposes as part of the Neurolytics ADA Course Project.
