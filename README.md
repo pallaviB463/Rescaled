@@ -5,9 +5,7 @@
 [![Project](https://img.shields.io/badge/project-Jackfruit%20Problem%20Review-orange.svg)](presentation/jackfruit_review_4slides.pptx)
 [![License](https://img.shields.io/badge/license-Academic-lightgrey.svg)](LICENSE)
 
-> **Neurolytics ADA Course Project — Jackfruit Problem Review**  
-> **Team Rescaled:** Member P & Member Q  
-> **Submission Deadline:** Saturday End of Day | **Review Form:** [Google Form](https://forms.gle/GXGKUTMAdAEYLbyV6)
+> **Neurolytics ADA Course Project — Jackfruit Problem Review** 
 
 ---
 
