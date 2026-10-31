@@ -1,6 +1,6 @@
 # Rescaled: Scale-Dependence of CATE and Uplift Rankings for Zero-Heavy Outcomes
 
-[![Tests](https://img.shields.io/badge/tests-98%2F98%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-192%2F192%20passing-brightgreen.svg)](tests/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue.svg)](https://www.python.org/)
 [![Project](https://img.shields.io/badge/project-Jackfruit%20Problem%20Review-orange.svg)](presentation/jackfruit_review_4slides.pptx)
 [![License](https://img.shields.io/badge/license-Academic-lightgrey.svg)](LICENSE)
