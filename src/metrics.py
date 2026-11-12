@@ -1,0 +1,129 @@
+
+"""Evaluation metrics for treatment-effect estimation and policy learning."""
+
+import numpy as np
+from scipy.stats import spearmanr
+
+
+def rank_corr(a, b):
+    """Return Spearman rank correlation; NaN if either input is constant."""
+    a = np.asarray(a, dtype=float).ravel()
+    b = np.asarray(b, dtype=float).ravel()
+
+    if a.shape != b.shape:
+        raise ValueError("a and b must have the same shape.")
+    if a.size < 2:
+        return np.nan
+    if not np.all(np.isfinite(a)) or not np.all(np.isfinite(b)):
+        raise ValueError("Inputs must contain only finite values.")
+
+    if np.ptp(a) == 0 or np.ptp(b) == 0:
+        return np.nan
+
+    result = spearmanr(a, b).statistic
+    return float(result) if np.isfinite(result) else np.nan
+
+
+def topk_mask(score, k):
+    """Select the top k fraction of scores."""
+    score = np.asarray(score, dtype=float).ravel()
+
+    if score.size == 0:
+        raise ValueError("score must not be empty.")
+    if not np.isfinite(k) or not 0 < k <= 1:
+        raise ValueError("k must be in (0, 1].")
+    if not np.all(np.isfinite(score)):
+        raise ValueError("Scores must be finite.")
+
+    n = max(1, int(round(k * len(score))))
+    mask = np.zeros(len(score), dtype=bool)
+    mask[np.argsort(-score)[:n]] = True
+    return mask
+
+
+def topk_overlap(a, b, k=0.2):
+    """Compute intersection-over-union of two top-k selections."""
+    A = topk_mask(a, k)
+    B = topk_mask(b, k)
+
+    if A.shape != B.shape:
+        raise ValueError("a and b must have the same shape.")
+
+    return float((A & B).sum() / (A | B).sum())
+
+
+def policy_value(tau_hat, tau_true, k=0.2):
+    """Mean true treatment effect among units selected by predicted effects."""
+    tau_hat = np.asarray(tau_hat, dtype=float).ravel()
+    tau_true = np.asarray(tau_true, dtype=float).ravel()
+
+    if tau_hat.shape != tau_true.shape:
+        raise ValueError("tau_hat and tau_true must have the same shape.")
+    if not np.all(np.isfinite(tau_true)):
+        raise ValueError("tau_true must contain only finite values.")
+
+    return float(tau_true[topk_mask(tau_hat, k)].mean())
+
+
+def regret(tau_hat, tau_true, k=0.2):
+    """Difference between oracle and estimated-policy value."""
+    return policy_value(tau_true, tau_true, k) - policy_value(
+        tau_hat, tau_true, k
+    )
+
+
+def _validate_ipw_inputs(tau_hat, W, y, e):
+    """Validate shared inputs for IPW-based metrics."""
+    tau_hat = np.asarray(tau_hat, dtype=float).ravel()
+    W = np.asarray(W).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+
+    if not (len(tau_hat) == len(W) == len(y)) or len(y) == 0:
+        raise ValueError("Inputs must have the same nonzero length.")
+
+    if not np.isfinite(e) or not 0 < e < 1:
+        raise ValueError("e must be strictly between 0 and 1.")
+
+    if not np.all(np.isin(W, [0, 1])):
+        raise ValueError("W must contain only 0 and 1.")
+
+    if not np.all(np.isfinite(tau_hat)):
+        raise ValueError("tau_hat must contain only finite values.")
+
+    if not np.all(np.isfinite(y)):
+        raise ValueError("y must contain only finite values.")
+
+    return tau_hat, W, y
+
+
+def qini_auc(tau_hat, W, y, e=0.5):
+    """Compute the starter's normalized IPW cumulative-gain summary.
+
+    This is a custom cumulative-gain summary, not necessarily a
+    conventional normalized Qini coefficient.
+    """
+    tau_hat, W, y = _validate_ipw_inputs(tau_hat, W, y, e)
+
+    order = np.argsort(-tau_hat)
+    w_sorted, y_sorted = W[order], y[order]
+
+    contribution = y_sorted * (
+        w_sorted / e - (1 - w_sorted) / (1 - e)
+    )
+
+    return float(np.cumsum(contribution).sum() / len(y) ** 2)
+
+
+def ipw_policy_value(tau_hat, W, y, k=0.2, e=0.5):
+    """Estimate mean outcome under a deterministic policy using IPW.
+
+    Assumes a known, constant treatment propensity e. This estimates
+    policy outcome value, not incremental value over a baseline policy.
+    """
+    tau_hat, W, y = _validate_ipw_inputs(tau_hat, W, y, e)
+
+    treatment_policy = topk_mask(tau_hat, k).astype(int)
+    matches_policy = W == treatment_policy
+    propensity = np.where(W == 1, e, 1 - e)
+
+    return float(np.mean(y * matches_policy / propensity))

@@ -1,0 +1,2 @@
+scenario,learner,transform,scale,rank_corr,topk_overlap,policy_value,regret,rho_vs_a1
+opposed,T,level,1.0,0.28818051904512976,0.2989906440668064,1.857869560991256,1.0273991786607493,
