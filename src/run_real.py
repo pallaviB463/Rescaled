@@ -1,4 +1,4 @@
-"""run_real.py  (OWNER: Member Q). Hillstrom MineThatData e-mail test (task Q6).
+"""run_real.py. Hillstrom MineThatData e-mail test (task Q6).
 Binary comparison: Men's e-mail vs control (primary), Women's vs control (replicate).
 No ground truth, so we measure: rank stability across unit scales, IPW policy value, Qini.
 All scores are OUT-OF-FOLD (repeated K-fold). Transforms are applied inside the training fold only (no leakage).

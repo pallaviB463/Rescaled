@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Final One-Pager - Jackfruit Project ADA 2026</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.45;
+    margin: 40px auto;
+    max-width: 850px;
+    padding: 0 20px;
+    font-size: 13.5px;
+  }
+  h1 {
+    font-size: 20px;
+    color: #0f172a;
+    margin-bottom: 4px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  h2 {
+    font-size: 15px;
+    color: #2563eb;
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .sub-bar {
+    font-size: 11.5px;
+    color: #64748b;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .team-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+    font-size: 12px;
+  }
+  .team-table th, .team-table td {
+    border: 1px solid #cbd5e1;
+    padding: 6px 10px;
+    text-align: left;
+  }
+  .team-table th {
+    background-color: #0f172a;
+    color: white;
+    font-weight: 600;
+  }
+  .team-table tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  h3 {
+    font-size: 13.5px;
+    color: #0f172a;
+    border-left: 3.5px solid #2563eb;
+    padding-left: 8px;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  p {
+    margin: 4px 0 8px 0;
+    text-align: justify;
+  }
+  ul {
+    margin: 4px 0 8px 18px;
+    padding: 0;
+  }
+  li {
+    margin-bottom: 3px;
+  }
+  strong {
+    color: #0f172a;
+  }
+  .badge {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .footer {
+    margin-top: 20px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+  }
+  @media print {
+    body { margin: 15mm; font-size: 11pt; }
+    h1 { font-size: 15pt; }
+    h2 { font-size: 12pt; }
+    .footer { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Does the Way We Transform Outcomes Change Who We Target?</h1>
+<h2>Scale-Dependence of CATE and Uplift Rankings for Zero-Heavy Outcomes, with Count-Aware Learners</h2>
+<div class="sub-bar">
+  <span><strong>Jackfruit Project – Final One-Pager</strong> | Advanced Data Analytics (ADA-2026)</span>
+  <span><strong>Deadline:</strong> 16/11/2026 EOD | <strong>Faculty:</strong> Prof. Bhaskarjyoti Das</span>
+</div>
+
+<table class="team-table">
+  <tr>
+    <th style="width: 50%;">Team Member</th>
+    <th style="width: 50%;">SRN</th>
+  </tr>
+  <tr>
+    <td><strong>Pallavi B</strong></td>
+    <td>PES1UG24AM906</td>
+  </tr>
+  <tr>
+    <td><strong>Khushi Patel</strong></td>
+    <td>PES1UG24AM134</td>
+  </tr>
+  <tr>
+    <td><strong>N Lakshanya</strong></td>
+    <td>PES1UG24AM169</td>
+  </tr>
+  <tr>
+    <td><strong>Porla Neha</strong></td>
+    <td>PES1UG25AM808</td>
+  </tr>
+</table>
+
+<h3>1. Project Summary</h3>
+<p>
+In commercial applications—such as e-commerce promotions, ad-tech conversion bidding, and healthcare treatments—outcomes \(Y \ge 0\) exhibit <strong>severe zero inflation (90–99% exact zeros)</strong> and heavy right tails. Causal ML practitioners routinely apply concave transformations, universally \(g(y) = \log(1 + ay)\) or \(\text{asinh}(ay)\), to stabilize variance and rein in outlier leverage. While Chen &amp; Roth (2024) recently proved that the average treatment effect (ATE) of log-like transformations depends arbitrarily on unit scaling \(a\) (e.g. dollars vs. cents), its consequences for <strong>individual-level uplift rankings and targeting policies had remained unstudied</strong>.
+</p>
+<p>
+This project investigates whether the choice of reporting scale \(a\) changes <em>who</em> gets targeted, quantifies commercial policy regret, and evaluates whether count-aware native likelihood models restore scale equivariance without ad-hoc transformations. Across controlled Monte Carlo simulations, oracle benchmark grids, and a randomized commercial field trial (\(N=64{,}000\)), we show that: <strong>(1)</strong> varying \(a\) under \(\log(1+ay)\) replaces up to <strong>48.2% of top-20% targeted customers</strong> on real marketing spend; <strong>(2)</strong> as \(a \to 0\), rankings target Level Dollars (\(\tau_{\text{level}}\)), but as \(a \to \infty\), rankings converge strictly to Conversion Probability (\(\tau_{\text{extensive}}\)), completely ignoring spend magnitude; and <strong>(3)</strong> Compound Poisson-Gamma (<strong>Tweedie</strong>, \(p=1.5\)) and Two-Part <strong>Hurdle</strong> estimators achieve <strong>exact \(\rho = 1.0000\) scale equivariance</strong> and generate the highest empirical policy value ($0.8566 vs $0.7302 per user).
+</p>
+
+<h3>2. Work Execution &amp; Feasibility</h3>
+<p>
+The project was executed across an 8-week modular timeline, verified by <strong>192 automated unit tests (100% passing)</strong> across 16 test modules:
+</p>
+<ul>
+  <li><strong>Weeks 1–2 (Literature &amp; Mathematical Theory):</strong> Mapped Chen &amp; Roth (2024) and Mullahy &amp; Norton (2004) to uplift meta-learners; formalized asymptotic proofs for \(a \to 0\) and \(a \to \infty\).</li>
+  <li><strong>Weeks 3–4 (Modular Engine &amp; DGPs):</strong> Implemented 6 synthetic DGP scenarios (<code>Null</code>, <code>Homogeneous</code>, <code>Extensive</code>, <code>Intensive</code>, <code>Aligned</code>, <code>Opposed</code>) across zero rates \(p_0 \in \{0.70, 0.90, 0.98\}\); built cross-fitted T-, S-, X-, and DR-learners with L2, Tweedie (\(p=1.5\)), Hurdle, and Quasi-Poisson base models.</li>
+  <li><strong>Weeks 5–6 (Oracle Analysis &amp; Field Evaluations):</strong> Executed oracle analysis isolating estimand warping from estimation noise; ran repeated 5-fold cross-validation on Hillstrom (\(N=64{,}000\)) and Criteo semi-synthetic (\(N=200{,}000\)).</li>
+  <li><strong>Weeks 7–8 (Synthesis &amp; Artifact Compilation):</strong> Built unified replication notebook (<code>.ipynb</code>), IEEE manuscript, and 16:9 presentation deck. Tools: Python 3.11, LightGBM, Scikit-learn, SciPy, Joblib.</li>
+</ul>
+
+<h3>3. Datasets Evaluated</h3>
+<ul>
+  <li><strong>Synthetic &amp; Oracle Zero-Heavy Benchmarks (\(N=20{,}000\), 6 Scenarios, 100 Replications):</strong> Configurable two-margin DGPs with known ground-truth CATE across zero proportions \(p_0 \in \{0.70, 0.90, 0.98\}\).</li>
+  <li><strong>Hillstrom MineThatData Randomized Marketing Field Trial (\(N=64{,}000\)):</strong> Genuine randomized retail marketing trial (Men's \(N=42{,}613\), Women's \(N=42{,}693\), Control \(N=21{,}307\)) with <strong>99.1% zero spend</strong>. Evaluated across continuous budget fractions \(k \in [0.01, 0.50]\) and scales \(a \in [10^{-3}, 10^3]\).</li>
+  <li><strong>Criteo Uplift v2.1 Semi-Synthetic Benchmark (\(N=200{,}000\)):</strong> Real 12-dimensional advertising features paired with controlled two-margin synthetic spend.</li>
+</ul>
+
+<h3>4. Novelty &amp; Research Contributions</h3>
+<ul>
+  <li><strong>Extension of Chen &amp; Roth (2024) to CATE &amp; Uplift:</strong> Proves mathematically and empirically that concave transformations silently alter the targeted estimand, converting monetary revenue targeting into binary conversion targeting as scale increases.</li>
+  <li><strong>Count-Aware Likelihoods for Uplift:</strong> First benchmark applying compound Poisson-Gamma (Tweedie deviance, \(p=1.5\)) and Hurdle models inside cross-fitted meta-learners for zero-heavy continuous spend.</li>
+  <li><strong>Separation of Estimand Warping from Estimation Noise:</strong> Oracle ranking analysis proves ranking collapse is an inherent mathematical pathology of concave transformations, not an estimation artifact.</li>
+  <li><strong>Practical Decision Framework:</strong> Provides an actionable decision flowchart for practitioners detailing when \(\log(1+ay)\) is acceptable and when Tweedie is mandatory.</li>
+</ul>
+
+<h3>5. Key Empirical Learnings &amp; Results</h3>
+<ul>
+  <li><strong>H1 (Ranking Instability) — Validated:</strong> Under \(\log(1+ay)\), Spearman rank stability drops to \(\rho = 0.5660\) and Top-20% overlap drops to \(35.87\%\) when extensive and intensive margins diverge.</li>
+  <li><strong>H2 (Transformation Growth Rate) — Validated:</strong> Strictly power transforms (\(y^{1/2}\)) and rank percentiles preserve scale equivariance (\(\rho \equiv 1.000\)), whereas slow-growth logarithmic transforms suffer severe rank inversion.</li>
+  <li><strong>H3 (Count Model Equivariance) — Validated:</strong> Tweedie and Hurdle maintain exact scale-equivariance (\(\rho = 1.0000\), \(100\%\) overlap) across all unit scalings \(a \in [10^{-3}, 10^3]\) and zero rates (\(70\% - 98\%\)).</li>
+  <li><strong>H4 (Policy Welfare Maximization) — Validated:</strong> On the Hillstrom field trial, Tweedie attains the peak empirical IPW policy value of <strong>$0.8566 / user</strong> at \(k=0.20\), outperforming naive level models ($0.7302) and log-transformed regression ($0.7831) by <strong>+$0.12 / targeted user</strong>.</li>
+</ul>
+
+<div class="footer">
+  Team Rescaled | Final Deliverable 1 of 6 | Advanced Data Analytics (ADA-2026) | PES University
+</div>
+
+</body>
+</html>
+

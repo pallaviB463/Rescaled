@@ -1,6 +1,5 @@
-# Data Note: Hillstrom and Criteo Benchmarks (Task Q2)
-
-**Owner:** Member Q  
+# Data Note: Hillstrom and Criteo Benchmarks
+**Team Rescaled** (Pallavi B, Khushi Patel, N Lakshanya, Porla Neha)  
 **Project:** Does the Way We Transform Outcomes Change Who We Target?  
 **Date:** October 2026  
 
@@ -85,10 +84,10 @@ Exact row counts and marginal rates computed directly from the full 13.98M-row d
 ### 2.3 Semi-Synthetic Stratified Benchmark (`data/criteo_sample_200k.parquet`)
 As specified in Part 3 (P12) and Part 7 of the playbook:
 - Real Criteo outcomes are binary (`visit`, `conversion`), so running revenue transforms directly on raw Criteo would merely be a binary classification problem.
-- Instead, Criteo serves as a **semi-synthetic benchmark**: we keep real customer covariates $X$ from Criteo to capture complex, real-world correlation structures, while generating zero-heavy spend outcomes with known ground truth via `simulate_from_X(X, W, scenario)` (Member P's module).
+- Instead, Criteo serves as a **semi-synthetic benchmark**: we keep real customer covariates $X$ from Criteo to capture complex, real-world correlation structures, while generating zero-heavy spend outcomes with known ground truth via `simulate_from_X(X, W, scenario)`.
 - We extracted an exact **200,000-row stratified subsample** preserved at [`data/criteo_sample_200k.parquet`](file:///c:/Users/palla/Downloads/Member_Q_starter_kit/q_kit/data/criteo_sample_200k.parquet):
   - Preserves exact $85.00\%$ treatment share ($170,000$ treated, $30,000$ control).
-  - Fully ready for immediate use once Member P hands off `simulate_from_X`.
+  - Fully integrated with `simulate_from_X`.
 
 ---
 

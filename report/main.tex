@@ -1,52 +1,67 @@
-\documentclass[11pt,a4paper]{article}
-\usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb,amsfonts,amsthm}
-\usepackage{booktabs}
-\usepackage{graphicx}
-\usepackage{hyperref}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
-\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{microtype}
 
 \hypersetup{
     colorlinks=true,
-    linkcolor=blue!70!black,
-    citecolor=blue!70!black,
-    urlcolor=blue!70!black
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue
 }
 
 % --- Fixed Project Notation ---
-% tau_level: business estimand (level effect in dollars or counts)
 \newcommand{\taulevel}{\tau_{\text{level}}}
-% tau_m_a: transformed estimand under transform m and unit scale a
 \newcommand{\tauma}{\tau_{m, a}}
-% unit scale parameter
 \newcommand{\unitscale}{a}
-% targeting budget fraction (e.g. top 20%)
 \newcommand{\budgetk}{k}
-% propensity score
 \newcommand{\propensity}{e(X)}
-% expectation and variance
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Var}{\text{Var}}
 
-\title{\textbf{Does the Way We Transform Outcomes Change Who We Target?}\\
-\large Scale-Dependence of CATE and Uplift Rankings for Zero-Heavy Outcomes,\\
-with Count-Aware Learners}
-
-\author{
-    \textbf{Team Neurolytics}\\
-    Member P (Truth and Models) \quad Member Q (Engine and Real Data)
-}
-
-\date{October 2026}
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
 
 \begin{document}
 
+\title{Does the Way We Transform Outcomes Change Who We Target?\\
+\large Scale-Dependence of CATE and Uplift Rankings for Zero-Heavy Outcomes, with Count-Aware Learners}
+
+\author{
+    \IEEEauthorblockN{Pallavi B}
+    \IEEEauthorblockA{\textit{Dept. of Computer Science} \\
+    \textit{PES University}, Bengaluru, India \\
+    SRN: PES1UG24AM906}
+    \and
+    \IEEEauthorblockN{Khushi Patel}
+    \IEEEauthorblockA{\textit{Dept. of Computer Science} \\
+    \textit{PES University}, Bengaluru, India \\
+    SRN: PES1UG24AM134}
+    \and
+    \IEEEauthorblockN{N Lakshanya}
+    \IEEEauthorblockA{\textit{Dept. of Computer Science} \\
+    \textit{PES University}, Bengaluru, India \\
+    SRN: PES1UG24AM169}
+    \and
+    \IEEEauthorblockN{Porla Neha}
+    \IEEEauthorblockA{\textit{Dept. of Computer Science} \\
+    \textit{PES University}, Bengaluru, India \\
+    SRN: PES1UG25AM808}
+}
+
 \maketitle
 
+
 \begin{abstract}
-\noindent \textbf{[Owner: Member Q]} \\
 When spend, revenue, or purchase counts feature a heavy mass at zero, analysts routinely apply non-linear transformations such as $\log(1+y)$ or $\text{arcsinh}(y)$ prior to fitting heterogeneous treatment effect (CATE) and uplift models. While recent econometric work demonstrates that the average treatment effect (ATE) of log-like transformations depends arbitrarily on outcome measurement units (e.g., dollars vs. cents), it remains unknown whether this scale dependence distorts individual-level rankings and targeting decisions. In this work, we systematically investigate how data transformations and unit scalings affect customer prioritization, policy value, and regret. We benchmark standard transformed-outcome meta-learners against unit-equivariant count-aware base learners (Poisson, Tweedie, and two-part Hurdle models) integrated within S-, T-, X-, and Doubly Robust (DR) meta-learning architectures. Across synthetic zero-heavy spend simulations with exact counterfactual ground truth and real-world marketing incrementality benchmarks (the 64,000-customer Hillstrom email experiment and the 14-million-record Criteo uplift dataset), we show that whenever extensive (purchase probability) and intensive (spend magnitude) treatment margins diverge, log-like transformations cause substantial targeting turnover ($\sim 65\%$ top-tier customer reordering across units), accompanied by severe policy regret. In contrast, count-aware models preserve consistent rankings across unit scales, yielding superior targeting payoff. We conclude with a practical decision rule for uplift modeling on zero-heavy outcomes.
 \end{abstract}
 
@@ -58,7 +73,6 @@ When spend, revenue, or purchase counts feature a heavy mass at zero, analysts r
 % -------------------------------------------------------------
 \section{Introduction}
 \label{sec:intro}
-\noindent \textbf{[Owner: Member Q]}
 
 Marketing interventions, discount campaigns, and public policy programs frequently target zero-inflated continuous outcomes such as dollars spent, days hospitalized, or units purchased. In such settings, over $90\%$ of individuals typically have exact zero outcomes. To address positive skewness and stabilize variance, data scientists and applied econometricians routinely transform the outcome $Y$ via concave functions such as $\log(1 + aY)$ or $\text{arcsinh}(aY)$, where $a$ is an implicit scaling constant determined by the choice of measurement units (e.g., $a=1$ for dollars, $a=100$ for cents, $a=0.001$ for thousands of dollars).
 
@@ -147,12 +161,11 @@ Consequently, predicted treatment contrasts satisfy $\hat{\tau}_{aY}(X) = a \hat
 
 \section{Methodology}
 \label{sec:methods}
-\noindent \textbf{[Owner: Member P (Outcome Models), Member Q (Meta-Learners)]}
 
-% Table 1: Model Cards Placeholder
+% Table 1: Model Cards
 \begin{table}[htbp]
 \centering
-\caption{\textbf{Table 1: Outcome Model Cards.} Specification, loss function, and link function for each base learner family. \textit{[Owner: Member P]}}
+\caption{\textbf{Table 1: Outcome Model Cards.} Specification, loss function, and link function for each base learner family.}
 \label{tab:model_cards}
 \begin{tabular}{lllll}
 \toprule
@@ -166,11 +179,11 @@ Two-Part Hurdle & Binary log-loss + Gamma dev. & Logit + Log link & Unit-equivar
 \end{tabular}
 \end{table}
 
-% Table 2: Learner Cards (Completed by Member Q)
+% Table 2: Learner Cards
 \begin{table}[htbp]
 \centering
 \small
-\caption{\textbf{Table 2: Meta-Learner Cards for Zero-Heavy Uplift.} Formal definition of $\hat{\tau}(X)$, nuisance requirements, cross-fitting rules, and key weaknesses on $90\%+$ zero outcomes. \textit{[Owner: Member Q, Verified]}}
+\caption{\textbf{Table 2: Meta-Learner Cards for Zero-Heavy Uplift.} Formal definition of $\hat{\tau}(X)$, nuisance requirements, cross-fitting rules, and key weaknesses on $90\%+$ zero outcomes.}
 \label{tab:learner_cards}
 \begin{tabular}{p{2.2cm}p{3.8cm}p{2.5cm}p{2cm}p{4.2cm}}
 \toprule
@@ -190,12 +203,11 @@ Learner & Formula $\hat{\tau}(x)$ & Nuisances & Cross-Fitting & Key Weakness on 
 % -------------------------------------------------------------
 \section{Simulation Study}
 \label{sec:simulations}
-\noindent \textbf{[Owner: Member P (DGP Design), Member Q (Execution and Analysis)]}
 
-% Figure 1 Placeholder
+% Figure 1
 \begin{figure}[htbp]
 \centering
-\fbox{\parbox{0.85\textwidth}{\centering \vspace{2cm} \textbf{[Figure 1: Oracle True Rank Correlation vs. $\log_{10}(a)$ across all 6 scenarios and zero rates 70\%, 90\%, 98\%.]} \\ \textit{Owner: Member P} \vspace{2cm}}}
+\includegraphics[width=0.88\textwidth]{figures/figure1_oracle_ranking.png}
 \caption{\textbf{Oracle Scale Sensitivity.} Analytical rank correlation between the true transformed effect $\tauma$ and the true level effect $\taulevel$ as a function of unit scale $a$, demonstrating H1 and H2 without learner estimation error.}
 \label{fig:fig1_oracle}
 \end{figure}
@@ -203,7 +215,6 @@ Learner & Formula $\hat{\tau}(x)$ & Nuisances & Cross-Fitting & Key Weakness on 
 % -------------------------------------------------------------
 \section{Experimental Results}
 \label{sec:experiments}
-\noindent \textbf{[Owner: Member Q]}
 
 % Figure 2 Placeholder
 \begin{figure}[htbp]
@@ -232,7 +243,6 @@ Learner & Formula $\hat{\tau}(x)$ & Nuisances & Cross-Fitting & Key Weakness on 
 % -------------------------------------------------------------
 \section{Real-Data Benchmarks}
 \label{sec:real_data}
-\noindent \textbf{[Owner: Member Q (Hillstrom), Member P (Criteo)]}
 
 % Table 3: Real Data Benchmark Results (Hillstrom MineThatData)
 \begin{table}[htbp]
@@ -291,7 +301,6 @@ The results in Table~\ref{tab:real_data} provide compelling empirical evidence t
 % -------------------------------------------------------------
 \section{Discussion, Practical Guidance, and Decision Rule}
 \label{sec:discussion}
-\noindent \textbf{[Owner: Member Q (Lead), Member P (Review)]}
 
 \subsection{When Does Scale Sensitivity Matter?}
 Our synthetic simulations and field trial benchmarks reveal that the scale sensitivity of transformed uplift models is strictly governed by the alignment between the extensive margin (conversion probability) and intensive margin (spend given purchase):
@@ -376,6 +385,8 @@ For any nonlinear transformation $m$ with $m(0)=0$, the transformed estimand $\t
 
 \section{Reproducibility Protocol and Environment}
 \label{app:repro}
-\noindent \textbf{[Owner: Member Q]}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
 
 \end{document}
