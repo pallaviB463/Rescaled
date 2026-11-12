@@ -17,7 +17,11 @@ __pycache__/
 .idea/
 
 results/_local_only/
-
+results/tuning/*_fixed.csv
+results/main/
+results/pilot/
+results/time/
+*.tmp
 *.bak
 *_smoke.csv
 *_smoke_summary.csv
@@ -26,10 +30,9 @@ results/_local_only/
 *_pilot_summary.csv
 _scenario_write_test.csv
 
-results/tuning/*_fixed.csv
-
-data/raw/
+# Data files (raw large downloads and generated large tables)
+data/*.gz
+data/*.csv.gz
+data/criteo-research-uplift-v2.1.csv.gz
 data/processed/
-
-check_tuning_predictions.py
-check_tuning_split.py
+scratch/

@@ -1,306 +1,133 @@
-# Rescaled
+# Rescaled: Scale-Dependence of CATE and Uplift Rankings for Zero-Heavy Outcomes
 
-## Overview
+[![Tests](https://img.shields.io/badge/tests-192%2F192%20passing-brightgreen.svg)](tests/)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue.svg)](https://www.python.org/)
+[![Project](https://img.shields.io/badge/project-Jackfruit%20Problem%20Review-orange.svg)](jackfruit_review_4slides_updated.pdf)
+[![License](https://img.shields.io/badge/license-Academic-lightgrey.svg)](LICENSE)
 
-**Rescaled** is a research project investigating causal uplift estimation across different outcome scales. It studies how transformations of the outcome variable affect treatment-effect estimation, model behaviour, and the scale equivariance of uplift estimators.
-
-The project implements and evaluates multiple meta-learners, outcome transformations, simulation scenarios, and evaluation metrics. It also includes oracle-based analysis and a Criteo semi-synthetic experiment to study estimator performance under different conditions.
-
-The primary focus is to understand how modelling choices and outcome scales influence the reliability and behaviour of estimated treatment effects.
-
----
-
-## Project Objectives
-
-The main objectives of this project are:
-
-- Study causal treatment-effect estimation under different outcome scales.
-- Investigate the impact of outcome transformations on uplift estimation.
-- Implement and evaluate different meta-learning approaches.
-- Develop simulation scenarios to test estimator behaviour under controlled conditions.
-- Examine scale equivariance and the effects of back-transforming predictions.
-- Compare model performance using appropriate evaluation metrics.
-- Conduct oracle-based analysis to understand estimator performance.
-- Evaluate the proposed approaches using a Criteo semi-synthetic experiment.
-- Perform sanity checks and robustness analyses to validate the implementation.
+> **Neurolytics ADA Course Project — Team Rescaled**  
+> **Topic:** Scale-Dependence of CATE and Uplift Rankings for Zero-Heavy Outcomes, with Count-Aware Learners
 
 ---
 
-## Methodology
+## Executive Summary
 
-The project follows a simulation-based and experimental methodology.
+In commercial applications with non-negative spend outcomes $Y \in \{0\} \cup (0, \infty)$ (such as e-commerce promotions, ad-tech conversion values, and customer billing), outcomes exhibit **extreme zero inflation (70–99% zeros)** and heavy right tails. Causal machine learning practitioners routinely apply concave transformations:
 
-### 1. Data Generation
+$$g(y) = \log(1 + ay) \quad \text{or} \quad \text{asinh}(ay)$$
 
-Synthetic datasets are generated using configurable data-generating processes (DGPs). These allow controlled experimentation with different treatment assignments, outcome distributions, and treatment-effect structures.
+to stabilize variance, rein in outlier leverage, and satisfy MSE convergence in standard regression and tree models.
 
-### 2. Outcome Transformations
-
-Different outcome transformations are implemented to investigate how changing the outcome scale affects model fitting and treatment-effect estimation.
-
-### 3. Meta-Learners
-
-Multiple meta-learning approaches are implemented to estimate treatment effects, including:
-
-- S-Learner
-- T-Learner
-- X-Learner
-- DR-Learner
-- Transformed Outcome Learner
-
-### 4. Evaluation
-
-The estimators are evaluated using metrics designed to measure the quality of treatment-effect estimates and compare performance across different experimental settings.
-
-### 5. Simulation and Oracle Analysis
-
-Simulation experiments are used to compare estimators under controlled conditions. Oracle analysis provides an additional reference for evaluating estimator behaviour.
-
-### 6. Criteo Semi-Synthetic Experiment
-
-A Criteo semi-synthetic workflow is included to evaluate the methods using real covariates with synthetically generated treatment and outcome variables.
-
-### 7. Back-Transformation Analysis
-
-The project investigates back-transformation strategies and their effect on treatment-effect estimation, including comparisons with alternative approaches.
+However, the scaling parameter $a$ reflects arbitrary reporting units ($a=1$ for dollars, $a=0.01$ for cents, $a=1000$ for thousands). Building on the theoretical foundations of **Chen & Roth (2024)**, this project investigates:
+1. **Does the choice of reporting scale $a$ change who gets targeted by causal uplift policies?**
+2. **What is the mathematical mechanism driving ranking collapse?**
+3. **Can count-aware native likelihood models (Tweedie, Two-Part Hurdle) restore scale equivariance and eliminate policy regret?**
 
 ---
 
-## Repository Structure
+## Key Empirical & Theoretical Findings
+
+1. **Massive Real-World Customer Turnover (Hillstrom Field Trial, $N=64{,}000$, 99.1% Zeros):**
+   * On the real-world Hillstrom randomized marketing trial, changing scale from dollars ($a=1$) to cents ($a=0.01$) under $\log(1+ay)$ replaces **$48.2\%$ of the top-20% targeted customers**.
+   * Ad-hoc transformation causes targeting policies to churn and chase frequent low-dollar customers instead of high-incrementality customers.
+
+2. **Theoretical Asymptotic Margin Split (Chen & Roth 2024):**
+   * **Small-scale limit ($a \to 0$):** $\lim_{a \to 0} \frac{\log(1+ay)}{a} = y \implies$ targets **Level Dollars** ($\tau_{\text{level}}$), where the intensive margin (spend magnitude) dominates.
+   * **Large-scale limit ($a \to \infty$):** $\log(1+ay) \to \log(a)\mathbf{1}(y>0) \implies$ targets purely **Extensive Margin (Conversion Probability)**, completely ignoring spend magnitude.
+   * Whenever conversion lift and basket lift diverge across customer segments, varying $a$ violently reverses targeting priorities.
+
+3. **Catastrophic Rank Collapse in Synthetic Benchmarks:**
+   * In controlled experiments with diverging margins (`extensive` and `opposed` scenarios), Spearman rank correlation under `log1p` drops from $\rho = 1.000$ to **$\rho \approx 0.566$**, with top-20% customer overlap plummeting to **$35.87\%$**.
+
+4. **Strict Scale Equivariance of Native Count Models:**
+   * Native likelihood models—Compound Poisson-Gamma (**Tweedie** deviance, $p=1.5$) and Two-Part **Hurdle** (LightGBM classifier $\times$ Gamma GLM)—maintain **exact $\rho = 1.0000$ and 100% targeting overlap** across all scales without ad-hoc transformations.
+
+5. **Empirical Policy Value Superiority:**
+   * On the Hillstrom trial, Tweedie achieves the highest empirical IPW policy value of **\$0.8566 / targeted user** at budget fraction $k=0.20$, outperforming naive level regression (\$0.7302) and log-transformed regression (\$0.7831) by **+\$0.12 / user**.
+
+---
+
+## Core Hypotheses Tested
+
+| Hypothesis | Description | Status | Evidence |
+|---|---|---|---|
+| **H1 (Instability)** | CATE rank stability drops sharply as scale $a$ changes when extensive $\ne$ intensive margins. | **Validated** | Spearman $\rho$ drops to 0.566 in `extensive` and `opposed` scenarios. |
+| **H2 (Transform Rate)** | Slower-growth concave transforms (`log1p`, `asinh`) destabilize far worse than power transforms (`sqrt`). | **Validated** | `sqrt` achieves $\rho \equiv 1.0000$ (scale-equivariant); `log1p` degrades rapidly. |
+| **H3 (Count Equivariance)** | Count-aware models (Tweedie, Hurdle) preserve exact scale equivariance across all scales. | **Validated** | Tweedie and Hurdle maintain $\rho = 1.0000$ across all 6 synthetic DGPs. |
+| **H4 (Policy Dominance)** | Count-aware models minimize empirical policy regret and maximize realized revenue. | **Validated** | Tweedie yields \$0.8566 vs \$0.7302 on Hillstrom field marketing trial. |
+
+---
+
+## Repository Architecture
 
 ```text
 Rescaled/
-│
 ├── config/
-│   └── Configuration files for experiments
-│
+│   ├── grid.yaml                          # Simulation grid configurations
+│   ├── grid_pilot.yaml
+│   └── grid_time.yaml
 ├── data/
-│   └── Datasets used in experiments
-│
-├── notebooks/
-│   └── Jupyter notebooks for exploration and analysis
-│
+│   ├── Hillstrom.csv                      # Hillstrom marketing trial (N=64,000, 99.1% zeros)
+│   ├── criteo_sample_200k.parquet         # High-dimensional Criteo ad trial sample
+│   └── processed/
+│       ├── criteo_semisynthetic_200k.csv  # Semi-synthetic spend benchmark
+│       └── criteo_semisynthetic_manifest.json
+├── figures/
+│   ├── fig2_rank_stability.png            # Spearman rho vs scale a
+│   ├── fig3_policy_value.png              # Hillstrom policy value vs budget k
+│   └── fig4_regret_heatmap.png            # Regret heatmap across learners & scenarios
 ├── report/
-│   ├── criteo_semisynthetic.md
-│   ├── backtransform.md
-│   └── scenarios_stress_grid.md
-│
+│   ├── main.tex                           # Master IEEE conference manuscript
+│   ├── references.bib                     # Academic bibliography
+│   ├── estimands.md                       # Formal causal estimands
+│   ├── backtransform.md                   # Back-transformation analysis
+│   ├── scenarios_stress_grid.md           # Stress grid documentation
+│   └── simulation_design.md               # Experimental simulation design
 ├── results/
-│   ├── simulations/
-│   │   └── Simulation outputs and summary metrics
-│   │
-│   ├── oracle_analysis/
-│   │   └── Oracle rankings, policy values, robustness results and figures
-│   │
-│   ├── tuning/
-│   │   └── Hyperparameter tuning experiments and comparisons
-│   │
-│   ├── backtransform/
-│   │   └── Back-transformation baselines and ablation results
-│   │
-│   ├── null_audit/
-│   │   └── Null-scenario audits and prediction magnitude analysis
-│   │
-│   └── model_comparisons/
-│       └── Model and six-scenario comparison results
-│
+│   ├── hillstrom_mens.csv                 # Out-of-fold repeated CV metrics (Men's campaign)
+│   ├── hillstrom_womens.csv               # Out-of-fold repeated CV metrics (Women's campaign)
+│   ├── oracle_analysis/                   # Figure 1 oracle ranking stability
+│   ├── tuning/                            # Hyperparameter tuning benchmarks
+│   └── null_audit/                        # Null scenario audit metrics
 ├── src/
-│   ├── dgp.py
-│   ├── transforms.py
-│   ├── models.py
-│   ├── metalearners.py
-│   ├── metrics.py
-│   ├── tuning.py
-│   ├── run_sim.py
-│   ├── oracle_analysis.py
-│   └── backtransform.py
-│
-├── tests/
-│   └── Automated tests for project modules
-│
-├── requirements.txt
-├── .gitignore
-└── README.md
+│   ├── dgp.py                             # 6 Synthetic DGP generators + semi-synthetic simulator
+│   ├── metalearners.py                    # S, T, X, DR, and Transformed Outcome learners
+│   ├── metrics.py                         # Spearman rho, top-k overlap, policy value, regret
+│   ├── models.py                          # L2, Tweedie (p=1.5), Hurdle, Poisson, NegBin
+│   ├── run_real.py                        # Hillstrom field trial cross-validation pipeline
+│   ├── run_sim.py                         # Simulation experiments runner
+│   ├── transforms.py                      # identity, log1p, sqrt, asinh, rank transformations
+│   ├── tuning.py                          # Hyperparameter tuning framework
+│   └── oracle_analysis.py                 # Oracle ranking stability pipeline
+└── tests/
+    └── 16 test suites (192 automated unit tests)
 ```
-
-**Note:** Intermediate smoke tests, pilot experiments, duplicate files, backups, and other temporary outputs are maintained locally under `results/_local_only/` and are excluded from version control.
 
 ---
 
-## Technologies Used
+## Setup & Testing
 
-- **Python 3.11**
-- NumPy
-- Pandas
-- SciPy
-- Scikit-learn
-- LightGBM
-- Statsmodels
-- Matplotlib
-- Joblib
-- Pytest
-
----
-
-## Installation and Setup
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/pallaviB463/Rescaled.git
-```
-
-### 2. Navigate to the Project Directory
-
-```bash
-cd Rescaled
-```
-
-### 3. Create a Virtual Environment
-
+### Installation
 ```bash
 python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-### 4. Activate the Virtual Environment
-
-**Windows PowerShell:**
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-**Windows Command Prompt:**
-
-```cmd
-.venv\Scripts\activate
-```
-
-### 5. Install Dependencies
-
+### Running the Test Suite
 ```bash
-python -m pip install -r requirements.txt
+python -m pytest tests
 ```
+*Current test status:* **192 passed** across all 16 test suites.
 
 ---
 
-## Running the Project
+## Deliverables & Review Submission
 
-Run the simulation script from the project root:
-
-```bash
-python -m src.run_sim
-```
-
-The exact experiment configuration and available options depend on the implementation in the corresponding source modules.
-
----
-
-## Running Tests
-
-The project uses **pytest** for automated testing.
-
-To run the complete test suite:
-
-```bash
-python -m pytest tests/ -v
-```
-
-To run tests for an individual module:
-
-```bash
-python -m pytest tests/test_dgp.py -v
-```
-
-```bash
-python -m pytest tests/test_transforms.py -v
-```
-
-```bash
-python -m pytest tests/test_models.py -v
-```
-
-```bash
-python -m pytest tests/test_metrics.py -v
-```
-
-```bash
-python -m pytest tests/test_metalearners.py -v
-```
-
----
-
-## Experimental Results
-
-The `results/` directory contains the selected experimental outputs generated during the project.
-
-| Directory | Contents |
-|---|---|
-| `simulations/` | Simulation outputs and zero-rate grid experiments |
-| `oracle_analysis/` | Oracle policy values, ranking results, robustness analysis, and figures |
-| `tuning/` | Causal tuning comparisons, validation results, tuning histories, and summary analysis |
-| `backtransform/` | Back-transformation baseline and ablation results |
-| `null_audit/` | Null-scenario audit results and prediction magnitude analysis |
-| `model_comparisons/` | Comparisons across outcome models, learners, and simulation scenarios |
-
-The tuning directory also contains `summarize_causal_comparison.py`, which combines the L2, Tweedie, and Hurdle causal tuning results and calculates mean and standard deviation across seeds.
-
-The committed results focus on selected experimental outputs rather than temporary smoke tests, pilot runs, or intermediate files.
-
----
-
-## Documentation
-
-The `report/` directory contains documentation describing important experimental components and research contributions.
-
-| Document | Description |
-|---|---|
-| `criteo_semisynthetic.md` | Documentation of the Criteo semi-synthetic experiment and workflow |
-| `backtransform.md` | Documentation of back-transformation methods and related analysis |
-| `scenarios_stress_grid.md` | Documentation of simulation scenarios and the stress-test grid |
-
----
-
-## Testing and Validation
-
-Automated tests are included to validate the main project components, including:
-
-- Data-generating processes
-- Outcome transformations
-- Outcome models
-- Meta-learners
-- Evaluation metrics
-
-The test suite is used to check implementation correctness and help identify regressions when changes are made.
-
----
-
-## Research Scope
-
-The research focuses on the relationship between outcome scales, transformations, and causal uplift estimation.
-
-Key areas of investigation include:
-
-1. Estimator behaviour under different outcome distributions.
-2. The effect of outcome transformations on treatment-effect estimation.
-3. Scale equivariance of uplift estimators.
-4. Performance comparisons across different meta-learners.
-5. Oracle-based evaluation and analysis.
-6. Back-transformation strategies and their limitations.
-7. Semi-synthetic evaluation using real-world covariates.
-
----
-
-## Project Status
-
-The core implementation and research activities assigned to **Member P (P1–P15)** have been completed.
-
-The repository contains the corresponding implementation, tests, simulation workflows, experimental results, analysis, and documentation.
-
-Further project contributions and extensions can be developed independently without modifying or removing the completed work.
-
----
-
-## License
-
-This repository is intended for academic and research purposes.
+The project deliverables package for the course evaluation is located under `Team_Rescaled_Deliverables/`:
+1. `1_Final_One_Pager/`: Course-format one-pager summary.
+2. `2_Code_ipynb/`: Self-contained master Jupyter notebook (`Rescaled_CATE_Uplift_Master.ipynb`).
+3. `3_Dataset/`: Hillstrom trial ($N=64{,}000$) and Criteo sample ($N=200{,}000$).
+4. `4_Project_PPT/`: 8-slide presentation deck + 4-slide review deck.
+5. `5_Video_Presentation_Script/`: Rehearsal presentation script (4m 15s).
+6. `6_IEEE_Report/`: Formal 2-column IEEE conference paper (`main.tex`).
