@@ -1,0 +1,8 @@
+# Timing run (task Q5): single replication at n=20000 with full 7 scales to measure runtime and verify controls.
+n: 20000
+k: 0.2
+scales: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]
+count_scales: [0.01, 1.0, 100.0]
+learners: [T, DR]
+cells:
+  - {scenarios: [opposed], zero_rates: [0.9], reps: 1, tier: must}

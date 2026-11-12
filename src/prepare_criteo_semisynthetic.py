@@ -1,4 +1,3 @@
-
 """Generate a reproducible semi-synthetic Criteo experiment."""
 
 import json
@@ -7,11 +6,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from dgp import SCENARIOS, simulate_from_X
-
+from src.dgp import SCENARIOS, simulate_from_X
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT_FILE = ROOT / "data" / "processed" / "criteo_covariates_200k.csv"
+INPUT_PARQUET = ROOT / "data" / "criteo_sample_200k.parquet"
 OUTPUT_FILE = ROOT / "data" / "processed" / "criteo_semisynthetic_200k.csv"
 MANIFEST_FILE = ROOT / "data" / "processed" / "criteo_semisynthetic_manifest.json"
 
@@ -23,13 +22,17 @@ SEED = 2026
 
 
 def main():
-    if not INPUT_FILE.exists():
+    if INPUT_FILE.exists():
+        raw = pd.read_csv(INPUT_FILE)
+        source_desc = str(INPUT_FILE.relative_to(ROOT))
+    elif INPUT_PARQUET.exists():
+        raw = pd.read_parquet(INPUT_PARQUET)
+        source_desc = str(INPUT_PARQUET.relative_to(ROOT))
+    else:
         raise FileNotFoundError(
-            f"Sample not found: {INPUT_FILE}\n"
-            "Run src/prepare_criteo_sample.py first."
+            f"Sample not found: {INPUT_FILE} or {INPUT_PARQUET}"
         )
 
-    raw = pd.read_csv(INPUT_FILE)
     feature_names = [f"f{i}" for i in range(12)]
 
     if not all(name in raw.columns for name in feature_names):
@@ -82,7 +85,7 @@ def main():
 
     manifest = {
         "dataset": "Criteo uplift covariates with synthetic treatment/outcomes",
-        "input_file": str(INPUT_FILE.relative_to(ROOT)),
+        "input_file": source_desc,
         "output_file": str(OUTPUT_FILE.relative_to(ROOT)),
         "n_rows": int(len(result)),
         "n_features": len(feature_names),

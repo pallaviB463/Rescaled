@@ -1,4 +1,3 @@
-
 """Outcome models for the Neurolytics project."""
 
 import numpy as np
@@ -7,6 +6,7 @@ import statsmodels.api as sm
 
 from sklearn.base import BaseEstimator, RegressorMixin
 
+BACKEND = "lightgbm"
 
 LGBM_PARAMS = {
     "n_estimators": 200,
@@ -15,6 +15,9 @@ LGBM_PARAMS = {
     "min_child_samples": 50,
     "verbosity": -1,
     "random_state": 42,
+    "deterministic": True,
+    "force_row_wise": True,
+    "n_jobs": 1,
 }
 
 
@@ -53,13 +56,13 @@ class L2(BaseEstimator, RegressorMixin):
 
     def fit(self, X, y):
         X, y = _validate_xy(X, y, allow_negative=True)
+        self.n_features_in_ = X.shape[1]
 
         self.model_ = lgb.LGBMRegressor(
             objective="regression",
             **{**LGBM_PARAMS, **self.kwargs},
         )
         self.model_.fit(X, y)
-        self.n_features_in_ = X.shape[1]
         return self
 
     def predict(self, X):
@@ -79,13 +82,17 @@ class Poisson(BaseEstimator, RegressorMixin):
 
     def fit(self, X, y):
         X, y = _validate_xy(X, y)
+        self.n_features_in_ = X.shape[1]
+        if np.all(y == 0):
+            self.all_zero_ = True
+            return self
+        self.all_zero_ = False
 
         self.model_ = lgb.LGBMRegressor(
             objective="poisson",
             **{**LGBM_PARAMS, **self.kwargs},
         )
         self.model_.fit(X, y)
-        self.n_features_in_ = X.shape[1]
         return self
 
     def predict(self, X):
@@ -94,6 +101,8 @@ class Poisson(BaseEstimator, RegressorMixin):
         if X.ndim != 2 or X.shape[1] != self.n_features_in_:
             raise ValueError("Prediction features have an incompatible shape.")
 
+        if getattr(self, "all_zero_", False):
+            return np.zeros(len(X))
         return self.model_.predict(X)
 
 
@@ -109,6 +118,11 @@ class Tweedie(BaseEstimator, RegressorMixin):
 
     def fit(self, X, y):
         X, y = _validate_xy(X, y)
+        self.n_features_in_ = X.shape[1]
+        if np.all(y == 0):
+            self.all_zero_ = True
+            return self
+        self.all_zero_ = False
 
         self.model_ = lgb.LGBMRegressor(
             objective="tweedie",
@@ -116,7 +130,6 @@ class Tweedie(BaseEstimator, RegressorMixin):
             **{**LGBM_PARAMS, **self.kwargs},
         )
         self.model_.fit(X, y)
-        self.n_features_in_ = X.shape[1]
         return self
 
     def predict(self, X):
@@ -124,6 +137,9 @@ class Tweedie(BaseEstimator, RegressorMixin):
 
         if X.ndim != 2 or X.shape[1] != self.n_features_in_:
             raise ValueError("Prediction features have an incompatible shape.")
+
+        if getattr(self, "all_zero_", False):
+            return np.zeros(len(X))
 
         return self.model_.predict(X)
 
@@ -136,21 +152,16 @@ class Hurdle(BaseEstimator, RegressorMixin):
 
     def fit(self, X, y):
         X, y = _validate_xy(X, y)
-
         positive = y > 0
+        self.n_features_in_ = X.shape[1]
 
         if not np.any(positive):
             raise ValueError(
                 "Hurdle model needs at least one positive training outcome."
             )
 
-        self.n_features_in_ = X.shape[1]
-
         if np.all(positive):
             self.all_positive_ = True
-            self.occurrence_model_ = None
-        elif not np.any(positive):
-            self.all_positive_ = False
             self.occurrence_model_ = None
         else:
             self.all_positive_ = None
@@ -164,7 +175,6 @@ class Hurdle(BaseEstimator, RegressorMixin):
             **{**LGBM_PARAMS, **self.kwargs},
         )
         self.positive_model_.fit(X[positive], y[positive])
-
         return self
 
     def predict(self, X):
@@ -175,13 +185,10 @@ class Hurdle(BaseEstimator, RegressorMixin):
 
         if self.all_positive_ is True:
             probability_positive = np.ones(len(X))
-        elif self.all_positive_ is False:
-            probability_positive = np.zeros(len(X))
         else:
             probability_positive = self.occurrence_model_.predict_proba(X)[:, 1]
 
         positive_mean = self.positive_model_.predict(X)
-
         return probability_positive * np.maximum(positive_mean, 0.0)
 
 
@@ -220,5 +227,4 @@ class NegBin(BaseEstimator, RegressorMixin):
             raise ValueError("Prediction features have an incompatible shape.")
 
         X_with_intercept = sm.add_constant(X, has_constant="add")
-
         return np.asarray(self.model_.predict(X_with_intercept))
