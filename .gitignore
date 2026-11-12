@@ -18,6 +18,9 @@ __pycache__/
 
 results/_local_only/
 results/tuning/*_fixed.csv
+results/main/
+results/pilot/
+results/time/
 *.tmp
 *.bak
 *_smoke.csv
@@ -27,8 +30,9 @@ results/tuning/*_fixed.csv
 *_pilot_summary.csv
 _scenario_write_test.csv
 
-# Data files (raw large downloads)
+# Data files (raw large downloads and generated large tables)
 data/*.gz
 data/*.csv.gz
 data/criteo-research-uplift-v2.1.csv.gz
+data/processed/
 scratch/
