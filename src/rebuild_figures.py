@@ -1,4 +1,4 @@
-"""rebuild_figures.py (OWNER: Member Q).
+"""rebuild_figures.py.
 Clean reproducibility script to regenerate all manuscript figures and tables from results.
 
 Usage:

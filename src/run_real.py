@@ -1,13 +1,19 @@
-"""Hillstrom real-data experiment.
+"""Hillstrom real-data experiment (Hillstrom MineThatData e-mail test).
+
+Compare Men's E-Mail vs No E-Mail (primary) and Women's E-Mail vs
+No E-Mail (replication). Since there is no individual-level ground truth
+for treatment effects, evaluate rank stability across outcome scales,
+IPW policy value, and Qini AUC using out-of-fold predictions.
 
 Quick diagnostic:
     python -u src/run_real.py data/Hillstrom.csv mens results/hillstrom_mens.csv
 
-Full experiment:
+Full repeated-cross-validation experiment:
     python -u src/run_real.py data/Hillstrom.csv mens results/hillstrom_mens.csv --full
 
-The quick mode is intentionally small so that integration can be verified promptly.
-Use --full for the larger repeated-cross-validation experiment.
+The quick mode verifies integration promptly. Use --full for the larger
+experiment with repeated cross-validation, multiple transforms, learners,
+and available count models.
 """
 
 from __future__ import annotations

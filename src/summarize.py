@@ -1,4 +1,4 @@
-"""summarize.py (OWNER: Member Q).
+"""summarize.py.
 Summarizes simulation results, checks quality gates, and prints the controls table.
 
 Usage:

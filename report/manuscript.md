@@ -1,5 +1,5 @@
 Neurolytics: Transformation and Scale Sensitivity in Treatment-Effect Ranking
-Draft status: Member P manuscript contribution. This document covers estimands, simulation design, methods, model cards, related work, and Appendix A. It is not the complete project manuscript.
+Draft status: Team Rescaled manuscript draft. This document covers estimands, simulation design, methods, model cards, related work, and Appendix A.
 
 1. Estimands and theoretical framework
 1.1 Level-scale conditional average treatment effect

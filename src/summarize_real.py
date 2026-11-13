@@ -1,4 +1,4 @@
-"""summarize_real.py (OWNER: Member Q).
+"""summarize_real.py.
 Aggregates and formats real-data experiment results (Task Q6 / Q10, Table 3).
 
 Usage:

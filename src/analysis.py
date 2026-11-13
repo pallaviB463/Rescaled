@@ -1,4 +1,4 @@
-"""analysis.py (OWNER: Member Q).
+"""analysis.py.
 Aggregates simulation and real-data results, calculates bootstrap confidence intervals,
 computes paired differences, and generates Figures 2, 3, and 4 for the manuscript.
 

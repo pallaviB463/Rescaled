@@ -282,7 +282,7 @@ class BackTransformLearner:
         return y1 - y0
 
 
-# --- Functional Interface (Member Q Simulation Pipelines) ---
+# --- Functional Interface (Simulation Pipelines) ---
 
 def t_learner(M, X, W, y, Xte, e=0.5):
     return M().fit(X[W == 1], y[W == 1]).predict(Xte) - M().fit(X[W == 0], y[W == 0]).predict(Xte)

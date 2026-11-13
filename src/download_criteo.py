@@ -1,4 +1,4 @@
-"""download_criteo.py (OWNER: Member Q).
+"""download_criteo.py.
 Downloads the Criteo Uplift v2.1 dataset from the official Hugging Face mirror,
 verifies row counts and treatment shares, and extracts a 200k stratified subsample
 for the semi-synthetic benchmark (task P12).

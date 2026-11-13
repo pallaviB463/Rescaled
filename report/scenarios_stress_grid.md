@@ -1,4 +1,5 @@
-﻿# Member P: Simulation Scenarios and Stress-Grid Protocol
+# Simulation Scenarios and Stress-Grid Protocol
+**Team Rescaled** (Pallavi B, Khushi Patel, N Lakshanya, Porla Neha)  
 
 ## 1. Purpose
 
