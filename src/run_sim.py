@@ -7,17 +7,32 @@ import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 
-from src.dgp import SCENARIOS, simulate, true_transformed_cate
-from src.metrics import rank_corr, topk_overlap, policy_value, regret
-from src.models import L2, Tweedie, Hurdle
-from src.transforms import SCALES, TRANSFORMS
-from src.metalearners import (
-    SLearner,
-    TLearner,
-    XLearner,
-    DRLearner,
-    TransformedOutcomeLearner,
-)
+# Support both package execution (python -m src.run_sim) and
+# standalone imports used by run_real.py (python src/run_real.py ...).
+try:
+    from .dgp import SCENARIOS, simulate, true_transformed_cate
+    from .metrics import rank_corr, topk_overlap, policy_value, regret
+    from .models import L2, Tweedie, Hurdle
+    from .transforms import SCALES, TRANSFORMS
+    from .metalearners import (
+        SLearner,
+        TLearner,
+        XLearner,
+        DRLearner,
+        TransformedOutcomeLearner,
+    )
+except ImportError:
+    from dgp import SCENARIOS, simulate, true_transformed_cate
+    from metrics import rank_corr, topk_overlap, policy_value, regret
+    from models import L2, Tweedie, Hurdle
+    from transforms import SCALES, TRANSFORMS
+    from metalearners import (
+        SLearner,
+        TLearner,
+        XLearner,
+        DRLearner,
+        TransformedOutcomeLearner,
+    )
 
 LEARNERS = {
     "S": SLearner,

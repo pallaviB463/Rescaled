@@ -8,9 +8,12 @@ import numpy as np
 from sklearn.base import clone
 from sklearn.model_selection import KFold
 
-from src.models import L2
-from src.transforms import apply_transform
-
+try:
+    from .models import L2
+    from .transforms import apply_transform
+except ImportError:
+    from models import L2
+    from transforms import apply_transform
 
 def _validate_propensity(e):
     """Validate a constant treatment propensity score."""
